@@ -1,0 +1,5 @@
+node_modules/
+.npm-cache/
+main.js
+release/
+coverage/

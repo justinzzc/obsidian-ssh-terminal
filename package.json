@@ -1,0 +1,34 @@
+{
+  "name": "obsidian-ssh-terminal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run tests/unit",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "build": "node esbuild.config.mjs production",
+    "check": "tsc --noEmit && vitest run tests/unit && node esbuild.config.mjs production"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "ssh2": "^1.16.0",
+    "yaml": "^2.7.0"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "@codemirror/language": "^6.10.8",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.36.5",
+    "@types/node": "^22.15.0",
+    "@types/ssh2": "^1.15.5",
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.1.0",
+    "obsidian": "1.8.7",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
