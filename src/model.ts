@@ -7,7 +7,15 @@ export type PluginErrorCode =
   | "PROFILE_INVALID"
   | "PROFILE_NOT_FOUND"
   | "CREDENTIAL_STORE_UNAVAILABLE"
-  | "CREDENTIAL_MISSING";
+  | "CREDENTIAL_MISSING"
+  | "HOST_KEY_REJECTED"
+  | "HOST_KEY_MISMATCH"
+  | "CONNECT_TIMEOUT"
+  | "NETWORK_ERROR"
+  | "AUTH_FAILED"
+  | "SHELL_OPEN_FAILED"
+  | "SESSION_STATE_INVALID"
+  | "REMOTE_CLOSED";
 
 export class PluginError extends Error {
   constructor(
