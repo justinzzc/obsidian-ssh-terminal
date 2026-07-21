@@ -1,7 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
-import { KeytarCredentialStore } from "../../src/profile/CredentialStore";
+import {
+  KeytarCredentialStore,
+  loadKeytarWithRequire
+} from "../../src/profile/CredentialStore";
 
 describe("KeytarCredentialStore", () => {
+  it("loads the native module through CommonJS require for Obsidian", () => {
+    const api = {
+      getPassword: vi.fn(async () => null),
+      setPassword: vi.fn(async () => undefined),
+      deletePassword: vi.fn(async () => true)
+    };
+    const requireModule = vi.fn(() => api);
+
+    expect(loadKeytarWithRequire(requireModule)).toBe(api);
+    expect(requireModule).toHaveBeenCalledWith("keytar");
+  });
+
   it("uses a fixed service name and the profile id as account", async () => {
     const api = {
       getPassword: vi.fn(async () => "secret"),

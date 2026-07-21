@@ -59,6 +59,13 @@ export class KeytarCredentialStore implements CredentialStore {
 }
 
 async function loadKeytar(): Promise<KeytarApi> {
-  const imported = await import("keytar");
-  return ("default" in imported ? imported.default : imported) as KeytarApi;
+  // Obsidian 插件以 CommonJS 脚本运行；require 才能从插件目录解析并加载原生 .node 模块。
+  return loadKeytarWithRequire(require);
+}
+
+export function loadKeytarWithRequire(
+  requireModule: (moduleId: string) => unknown
+): KeytarApi {
+  const imported = requireModule("keytar") as KeytarApi | { default: KeytarApi };
+  return "default" in imported ? imported.default : imported;
 }
