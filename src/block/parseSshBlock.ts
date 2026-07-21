@@ -4,6 +4,10 @@ import { PluginError, type SshBlockConfig } from "../model";
 const ALLOWED_FIELDS = new Set(["profile", "height"]);
 const FORBIDDEN_SECRET_FIELDS = new Set(["password", "passphrase", "privateKey"]);
 
+/**
+ * 严格解析文档中的 ssh 代码块。
+ * 这里主动拒绝未知字段和凭据字段，避免拼写错误或秘密被写进 Markdown。
+ */
 export function parseSshBlock(source: string): SshBlockConfig {
   let parsed: unknown;
 
@@ -21,6 +25,7 @@ export function parseSshBlock(source: string): SshBlockConfig {
   }
 
   const values = parsed as Record<string, unknown>;
+  // 先检查秘密字段，确保给用户的错误信息明确指出安全风险。
   for (const key of Object.keys(values)) {
     if (FORBIDDEN_SECRET_FIELDS.has(key)) {
       throw new PluginError(

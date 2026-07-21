@@ -38,6 +38,10 @@ export interface SshSessionDependencies {
   confirmHostKey(prompt: HostKeyPrompt): Promise<boolean>;
 }
 
+/**
+ * 单个 SSH 交互会话的状态机。
+ * 它负责凭据读取、主机密钥验证、PTY 生命周期和资源幂等释放。
+ */
 export class SshSession {
   state: SshSessionState = "idle";
   private client: SshClientAdapter | undefined;
@@ -66,6 +70,7 @@ export class SshSession {
 
     this.resetConnection();
     try {
+      // 在创建网络客户端之前读取凭据，缺少密码时不会产生任何网络请求。
       const password = await this.dependencies.credentials.getPassword(this.dependencies.profile.id);
       if (password === null) {
         throw new PluginError("CREDENTIAL_MISSING", "No password is saved for this SSH profile.");
@@ -120,6 +125,7 @@ export class SshSession {
     const profile = this.dependencies.profile;
     const decision = this.dependencies.hostKeys.check(profile.id, algorithm, fingerprint);
     if (decision.kind === "mismatch") {
+      // 指纹变化必须阻断，普通重连不能绕过。
       throw new PluginError("HOST_KEY_MISMATCH", "The SSH server host key has changed.");
     }
     if (decision.kind === "trusted") return;
@@ -149,6 +155,7 @@ export class SshSession {
   }
 
   private disposeConnection(): void {
+    // 先解除监听，再关闭流和客户端，避免关闭事件重复触发状态更新。
     for (const disposable of this.streamDisposables.splice(0)) disposable.dispose();
     this.stream?.close();
     this.stream = undefined;

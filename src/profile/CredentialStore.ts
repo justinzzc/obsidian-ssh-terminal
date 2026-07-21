@@ -2,6 +2,7 @@ import { PluginError } from "../model";
 
 const SERVICE_NAME = "obsidian-ssh-terminal";
 
+/** 密码存储抽象；任何实现都不得回退到 data.json 明文存储。 */
 export interface CredentialStore {
   isAvailable(): Promise<boolean>;
   getPassword(profileId: string): Promise<string | null>;
@@ -39,6 +40,7 @@ export class KeytarCredentialStore implements CredentialStore {
   }
 
   private async load(): Promise<KeytarApi | null> {
+    // 缓存加载结果，避免原生模块不可用时每次操作都重复触发加载错误。
     this.apiPromise ??= this.loader().catch(() => null);
     return this.apiPromise;
   }
@@ -46,6 +48,7 @@ export class KeytarCredentialStore implements CredentialStore {
   private async requireApi(): Promise<KeytarApi> {
     const api = await this.load();
     if (!api) {
+      // 安全失败：系统钥匙串不可用时拒绝保存，而不是使用弱加密或明文。
       throw new PluginError(
         "CREDENTIAL_STORE_UNAVAILABLE",
         "The operating system credential store is unavailable."

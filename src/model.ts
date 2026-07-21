@@ -1,3 +1,4 @@
+/** 插件跨模块共享的安全错误码；消息中禁止携带密码或终端内容。 */
 export type PluginErrorCode =
   | "BLOCK_INVALID_YAML"
   | "BLOCK_PROFILE_REQUIRED"
@@ -27,11 +28,13 @@ export class PluginError extends Error {
   }
 }
 
+/** Markdown 中 ssh 代码块解析后的最小配置。 */
 export interface SshBlockConfig {
   profileId: string;
   height: number;
 }
 
+/** 只包含非敏感信息的 SSH 连接配置。 */
 export interface SshProfile {
   id: string;
   name: string;

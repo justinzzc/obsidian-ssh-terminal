@@ -1,0 +1,41 @@
+.ssh-terminal {
+  display: flex;
+  min-height: 180px;
+  max-height: 900px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.ssh-terminal__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--background-secondary);
+}
+
+.ssh-terminal__status {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-monospace);
+}
+
+.ssh-terminal__error {
+  padding: 0.4rem 0.6rem;
+  color: var(--text-error);
+  background: var(--background-modifier-error);
+}
+
+.ssh-terminal__screen {
+  min-height: 0;
+  flex: 1;
+  padding: 0.4rem;
+  font-family: var(--font-monospace);
+}

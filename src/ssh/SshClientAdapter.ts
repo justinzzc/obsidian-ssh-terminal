@@ -30,6 +30,7 @@ export interface SshClientAdapter {
 
 export type SshClientFactory = () => SshClientAdapter;
 
+/** 将 ssh2 的事件式 API 收敛成会话层使用的 Promise/Disposable 接口。 */
 export class Ssh2ClientAdapter implements SshClientAdapter {
   private readonly client = new Client();
 
@@ -48,6 +49,7 @@ export class Ssh2ClientAdapter implements SshClientAdapter {
         password: options.password,
         readyTimeout: options.timeoutMs,
         hostVerifier: (key: Buffer, callback: (valid: boolean) => void) => {
+          // ssh2 在认证前回调这里；只有上层验证或确认指纹后才允许继续握手。
           const fingerprint = `SHA256:${createHash("sha256").update(key).digest("base64")}`;
           const algorithm = readKeyAlgorithm(key);
           void options.verifyHostKey(algorithm, fingerprint).then(

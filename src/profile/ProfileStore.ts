@@ -10,11 +10,16 @@ const EMPTY_DATA: PersistedPluginData = {
   hostKeys: {}
 };
 
+/** Obsidian loadData/saveData 的可测试边界。 */
 export interface PluginDataPersistence {
   load(): Promise<unknown>;
   save(data: PersistedPluginData): Promise<void>;
 }
 
+/**
+ * 集中维护插件数据快照，所有修改都先复制、持久化成功后再替换内存状态。
+ * 这样可以避免保存失败时内存状态与磁盘状态不一致。
+ */
 export class PluginDataRepository {
   private constructor(
     private readonly persistence: PluginDataPersistence,
@@ -78,6 +83,7 @@ export class ProfileStore {
       throw new PluginError("PROFILE_NOT_FOUND", `SSH profile not found: ${profileId}`);
     }
 
+    // 删除 profile 时必须同步清理系统凭据和 TOFU 指纹，避免遗留秘密。
     await credentials.deletePassword(profileId);
     await hostKeys.forget(profileId);
     await this.repository.update((data) => {
@@ -87,6 +93,7 @@ export class ProfileStore {
 }
 
 function validateProfile(profile: SshProfile): void {
+  // profile ID 会出现在 Markdown 中，因此必须稳定、可读且不包含空白字符。
   const valid =
     /^[a-z0-9][a-z0-9-]{0,63}$/.test(profile.id) &&
     profile.name.trim() !== "" &&

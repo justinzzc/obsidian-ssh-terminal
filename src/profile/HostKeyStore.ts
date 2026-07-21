@@ -10,6 +10,7 @@ export class HostKeyStore {
   constructor(private readonly repository: PluginDataRepository) {}
 
   check(profileId: string, algorithm: string, fingerprint: string): HostKeyDecision {
+    // 首次使用采用 TOFU；之后算法或指纹任一变化都视为潜在中间人攻击。
     const trusted = this.repository.snapshot().hostKeys[profileId];
     if (!trusted) return { kind: "unknown" };
     if (trusted.algorithm === algorithm && trusted.fingerprint === fingerprint) {
