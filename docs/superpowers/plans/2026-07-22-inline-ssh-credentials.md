@@ -567,7 +567,7 @@ git commit -m "docs: document inline ssh credentials"
 **Interfaces:**
 - Produces: build 阶段可审计的测试、构建与秘密扫描证据。
 
-- [ ] **Step 1: 运行干净的完整验证序列**
+- [x] **Step 1: 运行干净的完整验证序列**
 
 Run: `npm run check`
 
@@ -581,7 +581,7 @@ Run: `git status --short`
 
 Expected: 只包含预期的 Comet 状态/计划产物；没有未提交源码或测试修改。
 
-- [ ] **Step 2: 检查提交与任务对应关系**
+- [x] **Step 2: 检查提交与任务对应关系**
 
 Run: `git log --oneline 4f114369c4ff8af38a68df49aa015c864806850d..HEAD`
 
@@ -591,6 +591,6 @@ Expected: 至少包含 parser、target、session、renderer、host trust、docs/
 
 任何失败先加载 `superpowers:systematic-debugging` 确认根因，再新增最小失败测试、实现修复、重跑相关测试和全量 check，并以 `fix:` 提交。不得通过放宽安全断言或删除测试绕过失败。
 
-- [ ] **Step 4: 记录 review/verification 结果**
+- [x] **Step 4: 记录 review/verification 结果**
 
 按 Comet 选择的 `review_mode` 完成代码审查；CRITICAL 问题必须修复，非 CRITICAL 接受项写入持久化验证记录。确认 OpenSpec tasks 全部 `[x]` 后才能运行 build guard。
