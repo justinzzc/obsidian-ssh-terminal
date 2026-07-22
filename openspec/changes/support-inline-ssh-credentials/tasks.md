@@ -5,8 +5,8 @@
 
 ## 2. 统一连接目标
 
-- [ ] 2.1 为 profile 与 inline block 增加无 UI 的 `SshConnectionTarget` 解析器及测试，分别连接钥匙串密码提供器和短生命周期 inline 密码提供器
-- [ ] 2.2 实现基于规范化 host + port、且不含用户名或密码的稳定 inline 主机密钥标识，并覆盖域名大小写、IPv4、IPv6 与非默认端口测试
+- [x] 2.1 为 profile 与 inline block 增加无 UI 的 `SshConnectionTarget` 解析器及测试，分别连接钥匙串密码提供器和短生命周期 inline 密码提供器
+- [x] 2.2 实现基于规范化 host + port、且不含用户名或密码的稳定 inline 主机密钥标识，并覆盖域名大小写、IPv4、IPv6 与非默认端口测试
 
 ## 3. 会话与管理器重构
 

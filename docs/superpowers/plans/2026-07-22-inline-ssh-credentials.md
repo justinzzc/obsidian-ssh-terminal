@@ -162,7 +162,7 @@ git commit -m "feat: parse inline ssh block credentials"
 - Produces: `SshConnectionTarget`、`createInlineHostKeyId(host, port)`、`parseInlineHostKeyId(id)`。
 - Produces: `resolveSshConnectionTarget(config, { profiles, credentials }): SshConnectionTarget`。
 
-- [ ] **Step 1: 写入失败的 resolver 与标识测试**
+- [x] **Step 1: 写入失败的 resolver 与标识测试**
 
 ```ts
 it("resolves inline config without touching the credential store", async () => {
@@ -194,13 +194,13 @@ it.each([
 
 另加 profile 测试：target 使用 profile 字段，`hostKeyId === profile.id`，`getPassword()` 调用 `credentials.getPassword(profile.id)`；缺失 profile 抛 `PROFILE_NOT_FOUND`。
 
-- [ ] **Step 2: 运行测试并确认 Red**
+- [x] **Step 2: 运行测试并确认 Red**
 
 Run: `npm run test:unit -- tests/unit/resolveSshConnectionTarget.test.ts`
 
 Expected: FAIL，因为两个新模块不存在。
 
-- [ ] **Step 3: 实现 target 类型与 inline ID 编解码**
+- [x] **Step 3: 实现 target 类型与 inline ID 编解码**
 
 `src/ssh/SshConnectionTarget.ts`：
 
@@ -232,17 +232,17 @@ export function parseInlineHostKeyId(id: string): { host: string; port: number }
 }
 ```
 
-- [ ] **Step 4: 实现共享 resolver**
+- [x] **Step 4: 实现共享 resolver**
 
 `resolveSshConnectionTarget` 对 profile 创建钥匙串 closure，对 inline 创建只返回捕获密码的 async closure。不得调用 `isAvailable()` 或 `setPassword()`。`displayName` 分别使用 profile name 和 `${username}@${host}:${port}`。
 
-- [ ] **Step 5: 运行测试与类型检查**
+- [x] **Step 5: 运行测试与类型检查**
 
 Run: `npm run test:unit -- tests/unit/resolveSshConnectionTarget.test.ts && npx tsc --noEmit`
 
 Expected: resolver tests PASS；类型检查仅允许剩余旧 consumer 错误。
 
-- [ ] **Step 6: 提交 Task 2**
+- [x] **Step 6: 提交 Task 2**
 
 ```bash
 git add src/ssh/SshConnectionTarget.ts src/block/resolveSshConnectionTarget.ts tests/unit/resolveSshConnectionTarget.test.ts
