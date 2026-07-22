@@ -145,14 +145,52 @@ describe("TerminalView", () => {
     expect(manager.connect).toHaveBeenCalledWith("block-1", target);
   });
 
-  it("clears the terminal and returns focus on Escape", () => {
-    const { container, terminal, returnFocus } = mountTerminal();
-    container.querySelector<HTMLButtonElement>("[data-action=clear]")!.click();
-    container.querySelector<HTMLElement>(".ssh-terminal")!.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+  it("keeps the host visible and uses one button for the connection lifecycle", async () => {
+    const { container, manager } = mountTerminal();
+    const toolbar = container.querySelector<HTMLElement>(".ssh-terminal__toolbar")!;
+    const connectionButtons = Array.from(toolbar.querySelectorAll("button")).filter((button) =>
+      ["connect", "disconnect", "reconnect"].includes(button.dataset.action ?? "")
     );
+    const connectionButton = connectionButtons[0] as HTMLButtonElement;
+
+    expect(connectionButtons).toHaveLength(1);
+    expect(toolbar.textContent).toContain("Prod");
+    expect(connectionButton.textContent).toBe("Connect");
+
+    connectionButton.click();
+    expect(connectionButton.textContent).toBe("Connecting…");
+    expect(toolbar.textContent).toContain("Prod");
+    await flushPromises();
+
+    expect(connectionButton.textContent).toBe("Disconnect");
+    expect(toolbar.textContent).toContain("Prod");
+
+    connectionButton.click();
+    await flushPromises();
+    expect(manager.close).toHaveBeenCalledOnce();
+    expect(connectionButton.textContent).toBe("Connect");
+    expect(toolbar.textContent).toContain("Prod");
+  });
+
+  it("clears the terminal", () => {
+    const { container, terminal } = mountTerminal();
+    container.querySelector<HTMLButtonElement>("[data-action=clear]")!.click();
     expect(terminal.clear).toHaveBeenCalledOnce();
-    expect(returnFocus).toHaveBeenCalledOnce();
+  });
+
+  it("leaves Escape to the terminal without returning focus", () => {
+    const { container, terminal, returnFocus } = mountTerminal();
+    const event = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true
+    });
+    const dispatched = container.querySelector<HTMLElement>(".ssh-terminal")!.dispatchEvent(event);
+
+    expect(dispatched).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(returnFocus).not.toHaveBeenCalled();
+    expect(terminal.focus).not.toHaveBeenCalled();
   });
 
   it("closes the session and terminal exactly once when disposed", async () => {
@@ -166,11 +204,13 @@ describe("TerminalView", () => {
 
   it("releases session subscriptions on disconnect before reconnecting", async () => {
     const { container, createTarget, manager, session } = mountTerminal();
-    container.querySelector<HTMLButtonElement>("[data-action=connect]")!.click();
+    const connectionButton = container.querySelector<HTMLButtonElement>("[data-action=connect]")!;
+    connectionButton.click();
     await flushPromises();
 
-    container.querySelector<HTMLButtonElement>("[data-action=reconnect]")!.click();
+    connectionButton.click();
     await flushPromises();
+    connectionButton.click();
     await flushPromises();
 
     expect(session.dataDispose).toHaveBeenCalledTimes(1);
