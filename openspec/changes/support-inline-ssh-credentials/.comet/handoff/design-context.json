@@ -1,0 +1,14 @@
+{
+  "change": "support-inline-ssh-credentials",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "1531db132040593d79464063c88e09de3461c985a15069b4c3b90148b7741765",
+  "files": [
+    { "path": "openspec/changes/support-inline-ssh-credentials/proposal.md", "sha256": "1fec118f793158e82e9f57f0cda9fbc4241d14a54b56c101d7c279611f989daf" },
+    { "path": "openspec/changes/support-inline-ssh-credentials/design.md", "sha256": "d07ff917d51837e6ca0b34ec82e016c752afad54635b68dad46ba4ddf2ab2442" },
+    { "path": "openspec/changes/support-inline-ssh-credentials/tasks.md", "sha256": "0cb07e50442b1cde4d87f8f6af322bcb349faad3ffd07a9e1fc9b371b8268033" },
+    { "path": "openspec/changes/support-inline-ssh-credentials/specs/inline-ssh-credentials/spec.md", "sha256": "b2790f71a31774c8d719b93dc0dda448e27f80e432226dcaf61a85b7bddb5e1f" }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "openspec_proposal": "openspec/changes/support-inline-ssh-credentials/proposal.md",
+  "openspec_design": "openspec/changes/support-inline-ssh-credentials/design.md",
+  "openspec_tasks": "openspec/changes/support-inline-ssh-credentials/tasks.md",
+  "openspec_delta_spec": "openspec/changes/support-inline-ssh-credentials/specs/inline-ssh-credentials/spec.md",
+  "handoff_context": "openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.md"
+}
