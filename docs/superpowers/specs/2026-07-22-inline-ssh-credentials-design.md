@@ -2,6 +2,8 @@
 comet_change: support-inline-ssh-credentials
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-07-22-support-inline-ssh-credentials
+status: final
 ---
 
 # SSH Block 明文直连技术设计

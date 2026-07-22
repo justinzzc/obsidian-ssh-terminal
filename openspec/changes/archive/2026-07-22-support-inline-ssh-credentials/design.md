@@ -85,3 +85,13 @@ README 同时展示 profile 模式和 inline 模式示例，并在 inline 示例
 ## Open Questions
 
 无。用户已明确选择允许 Markdown 中的字面量明文密码，并接受其落盘与同步风险。
+
+## Implementation Divergence
+
+### TerminalView 使用 target factory 而非长期保存 target
+
+实施期间的 standard code review 发现：如果 `TerminalView` 长期保存 `SshConnectionTarget`，用户断开会话后仍会通过 `getPassword()` 闭包保留 inline 密码引用，与“会话关闭后释放连接目标引用”的规格要求冲突；但直接清空 target 又会破坏 Connect/Reconnect。
+
+最终实现把 `TerminalViewOptions.target` 调整为 `createTarget()`。阅读视图与实时预览保存当前 Markdown source，并在每次连接时重新调用共享 parser/resolver 创建临时 target。target 仅由本次连接 Promise、`SessionManager` 和 `SshSession` 持有；断开时 manager entry、session 订阅和 target 引用一并释放。Markdown 明文本身仍由文档/编辑器持有，这属于用户已接受的风险边界，不会额外复制到插件持久化数据或凭据存储。
+
+该偏差不改变 delta spec 的外部行为：profile 与 inline 模式、默认值、错误、TOFU、手动连接和重连行为保持一致，并缩短了 inline password provider 的引用生命周期。

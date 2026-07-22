@@ -4,5 +4,6 @@
   "openspec_tasks": "openspec/changes/support-inline-ssh-credentials/tasks.md",
   "openspec_delta_spec": "openspec/changes/support-inline-ssh-credentials/specs/inline-ssh-credentials/spec.md",
   "handoff_context": "openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.md"
+  "handoff_markdown": "openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-07-22-support-inline-ssh-credentials"
 }

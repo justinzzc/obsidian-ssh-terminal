@@ -2,6 +2,7 @@
 change: support-inline-ssh-credentials
 design-doc: docs/superpowers/specs/2026-07-22-inline-ssh-credentials-design.md
 base-ref: 4f114369c4ff8af38a68df49aa015c864806850d
+archived-with: 2026-07-22-support-inline-ssh-credentials
 ---
 
 # SSH Block 明文直连 Implementation Plan
