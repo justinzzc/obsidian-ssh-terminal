@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { resolveSshConnectionTarget } from "../../src/block/resolveSshConnectionTarget";
 import { HostKeyStore } from "../../src/profile/HostKeyStore";
 import { PluginDataRepository } from "../../src/profile/ProfileStore";
 
@@ -62,5 +63,35 @@ describe("HostKeyStore", () => {
 
     expect(store.listInline()).toEqual([expect.objectContaining({ id: second })]);
     expect(store.check(first, "ssh-ed25519", fingerprint)).toEqual({ kind: "unknown" });
+  });
+
+  it("never persists an inline block password with host trust", async () => {
+    const saved: unknown[] = [];
+    const repository = await PluginDataRepository.load({
+      load: async () => null,
+      save: async (data) => { saved.push(structuredClone(data)); }
+    });
+    const store = new HostKeyStore(repository);
+    const password = "never-leak-me";
+    const credentials = {
+      isAvailable: vi.fn(async () => false),
+      getPassword: vi.fn(async () => null),
+      setPassword: vi.fn(async () => undefined),
+      deletePassword: vi.fn(async () => undefined)
+    };
+    const target = resolveSshConnectionTarget({
+      mode: "inline",
+      host: "server.example.com",
+      port: 22,
+      username: "ops",
+      password,
+      height: 360,
+      timeoutMs: 15_000
+    }, { profiles: { get: () => undefined }, credentials });
+
+    await store.trust(target.hostKeyId, "ssh-ed25519", fingerprint);
+
+    expect(JSON.stringify(saved)).not.toContain(password);
+    expect(credentials.setPassword).not.toHaveBeenCalled();
   });
 });

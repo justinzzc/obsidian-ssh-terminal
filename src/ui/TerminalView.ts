@@ -46,14 +46,21 @@ export class TerminalView {
   private readonly connectButton: HTMLButtonElement;
   private readonly disconnectButton: HTMLButtonElement;
   private readonly disposables: Disposable[] = [];
+  private readonly sessionDisposables: Disposable[] = [];
+  private readonly options: Omit<TerminalViewOptions, "target">;
+  private target: SshConnectionTarget | undefined;
   private connecting: Promise<void> | undefined;
   private disposePromise: Promise<void> | undefined;
   private resizeObserver: ResizeObserver | undefined;
+  private disposed = false;
 
   private constructor(
     container: HTMLElement,
-    private readonly options: TerminalViewOptions
+    options: TerminalViewOptions
   ) {
+    const { target, ...retainedOptions } = options;
+    this.options = retainedOptions;
+    this.target = target;
     this.terminal = (options.terminalFactory ?? createXtermAdapter)();
     this.root = document.createElement("div");
     this.root.className = "ssh-terminal";
@@ -100,12 +107,16 @@ export class TerminalView {
 
   private connect(): Promise<void> {
     if (this.connecting) return this.connecting;
+    const target = this.target;
+    if (this.disposed || !target) return Promise.resolve();
     this.error.hidden = true;
     this.connectButton.disabled = true;
     this.status.textContent = "Connecting…";
-    this.connecting = this.options.manager.connect(this.options.instanceId, this.options.target).then(
+    this.connecting = this.options.manager.connect(this.options.instanceId, target).then(
       (session) => {
-        this.disposables.push(
+        if (this.disposed) return;
+        this.clearSessionDisposables();
+        this.sessionDisposables.push(
           session.onData((data) => this.terminal.write(data)),
           session.onStateChange((state) => {
             this.status.textContent = state === "connected" ? "Connected" : state;
@@ -127,6 +138,7 @@ export class TerminalView {
   }
 
   private async disconnect(): Promise<void> {
+    this.clearSessionDisposables();
     await this.options.manager.close(this.options.instanceId);
     this.status.textContent = "Disconnected";
     this.connectButton.disabled = false;
@@ -139,13 +151,23 @@ export class TerminalView {
   }
 
   private async performDispose(): Promise<void> {
+    this.disposed = true;
+    this.target = undefined;
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
     this.root.removeEventListener("keydown", this.onKeyDown);
+    this.clearSessionDisposables();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
-    await this.options.manager.close(this.options.instanceId);
-    this.terminal.dispose();
-    this.root.remove();
+    try {
+      await this.options.manager.close(this.options.instanceId);
+    } finally {
+      this.terminal.dispose();
+      this.root.remove();
+    }
+  }
+
+  private clearSessionDisposables(): void {
+    for (const disposable of this.sessionDisposables.splice(0)) disposable.dispose();
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {

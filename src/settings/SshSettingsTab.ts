@@ -21,7 +21,7 @@ export class SshSettingsTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "SSH Terminal 连接配置" });
     containerEl.createEl("p", {
-      text: "密码只保存到操作系统钥匙串，不会写入 Obsidian 数据或 Markdown。"
+      text: "profile 模式的密码只保存到操作系统钥匙串；inline 模式会写入 Markdown 明文。"
     });
 
     for (const profile of this.profiles.list()) this.renderProfile(containerEl, profile);

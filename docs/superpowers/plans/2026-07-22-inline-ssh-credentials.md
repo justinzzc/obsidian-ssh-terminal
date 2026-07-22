@@ -587,7 +587,7 @@ Run: `git log --oneline 4f114369c4ff8af38a68df49aa015c864806850d..HEAD`
 
 Expected: 至少包含 parser、target、session、renderer、host trust、docs/integration 的独立提交。
 
-- [ ] **Step 3: 若验证触发修复，遵循调试门禁**
+- [x] **Step 3: 若验证触发修复，遵循调试门禁**
 
 任何失败先加载 `superpowers:systematic-debugging` 确认根因，再新增最小失败测试、实现修复、重跑相关测试和全量 check，并以 `fix:` 提交。不得通过放宽安全断言或删除测试绕过失败。
 

@@ -23,7 +23,7 @@ beforeAll(async () => {
   const mapping = execFileSync("docker", ["port", containerName, "22/tcp"], { encoding: "utf8" }).trim();
   port = Number(mapping.match(/:(\d+)$/)?.[1]);
   if (!Number.isInteger(port)) throw new Error(`Cannot parse Docker SSH port: ${mapping}`);
-  await waitForPort(port);
+  await waitForSshBanner(port);
 }, 30_000);
 
 afterAll(() => {
@@ -83,11 +83,21 @@ function assertSafeContainerName(name: string): void {
   if (!/^obsidian-ssh-test-\d+$/.test(name)) throw new Error(`Unsafe container name: ${name}`);
 }
 
-async function waitForPort(targetPort: number): Promise<void> {
+async function waitForSshBanner(targetPort: number): Promise<void> {
   await waitFor(() => new Promise<boolean>((resolve) => {
     const socket = connect(targetPort, "127.0.0.1");
-    socket.once("connect", () => { socket.destroy(); resolve(true); });
-    socket.once("error", () => resolve(false));
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (ready: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      socket.destroy();
+      resolve(ready);
+    };
+    timer = setTimeout(() => finish(false), 500);
+    socket.once("data", (data) => finish(data.toString("utf8").startsWith("SSH-")));
+    socket.once("error", () => finish(false));
   }));
 }
 

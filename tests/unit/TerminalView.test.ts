@@ -69,9 +69,13 @@ function mountTerminal() {
     })
   };
   const session = {
-    onData: vi.fn(() => ({ dispose: vi.fn() })),
-    onStateChange: vi.fn(() => ({ dispose: vi.fn() }))
+    dataDispose: vi.fn(),
+    stateDispose: vi.fn(),
+    onData: vi.fn(),
+    onStateChange: vi.fn()
   };
+  session.onData.mockReturnValue({ dispose: session.dataDispose });
+  session.onStateChange.mockReturnValue({ dispose: session.stateDispose });
   const manager = {
     connect: vi.fn(async () => session),
     write: vi.fn(),
@@ -87,7 +91,7 @@ function mountTerminal() {
     terminalFactory: () => terminal,
     returnFocus
   });
-  return { container, terminal, manager, view, returnFocus };
+  return { container, terminal, manager, session, view, returnFocus };
 }
 
 describe("TerminalView", () => {
@@ -125,8 +129,9 @@ describe("TerminalView", () => {
   });
 
   it("does not create a network session while rendering", () => {
-    const { manager } = mountTerminal();
+    const { container, manager } = mountTerminal();
     expect(manager.connect).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("secret");
   });
 
   it("deduplicates rapid connect clicks", async () => {
@@ -156,5 +161,19 @@ describe("TerminalView", () => {
     await Promise.all([view.dispose(), view.dispose()]);
     expect(manager.close).toHaveBeenCalledTimes(1);
     expect(terminal.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases session subscriptions on disconnect before reconnecting", async () => {
+    const { container, manager, session } = mountTerminal();
+    container.querySelector<HTMLButtonElement>("[data-action=connect]")!.click();
+    await flushPromises();
+
+    container.querySelector<HTMLButtonElement>("[data-action=reconnect]")!.click();
+    await flushPromises();
+    await flushPromises();
+
+    expect(session.dataDispose).toHaveBeenCalledTimes(1);
+    expect(session.stateDispose).toHaveBeenCalledTimes(1);
+    expect(manager.connect).toHaveBeenCalledTimes(2);
   });
 });

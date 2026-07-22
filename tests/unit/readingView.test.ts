@@ -49,6 +49,7 @@ describe("registerReadingView", () => {
       hostKeyId: "prod"
     });
     child!.unload();
+    child!.unload();
     expect(disposable.dispose).toHaveBeenCalledOnce();
   });
 

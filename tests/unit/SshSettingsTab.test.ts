@@ -44,6 +44,8 @@ describe("SshSettingsTab", () => {
 
     tab.display();
 
+    expect(tab.containerEl.textContent).toContain("profile 模式的密码");
+    expect(tab.containerEl.textContent).toContain("inline 模式会写入 Markdown");
     expect(tab.containerEl.textContent).toContain("Inline SSH 主机信任");
     expect(tab.containerEl.textContent).toContain("server.example.com:2222");
     expect(tab.containerEl.textContent).toContain("ssh-ed25519 SHA256:AAAAAAAA");

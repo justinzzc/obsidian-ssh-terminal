@@ -131,9 +131,13 @@ describe("SshSession", () => {
 
   it("blocks a mismatched host key before opening a shell", async () => {
     const created = createSession();
-    created.setDecision({ kind: "mismatch", expected: "SHA256:old", received: "SHA256:test" });
+    const password = "never-leak-me";
+    created.setDecision({ kind: "mismatch", expected: password, received: "SHA256:test" });
 
-    await expect(created.session.connect()).rejects.toMatchObject({ code: "HOST_KEY_MISMATCH" });
+    await expect(created.session.connect()).rejects.toMatchObject({
+      code: "HOST_KEY_MISMATCH",
+      message: expect.not.stringContaining(password)
+    });
     expect(created.session.state).toBe("failed");
   });
 
@@ -169,7 +173,11 @@ describe("SshSession", () => {
     expect(client.connectCalls).toBe(0);
   });
 
-  it("never includes an inline password in mapped errors", async () => {
+  it.each([
+    [Object.assign(new Error("never-leak-me"), { level: "client-authentication" }), "AUTH_FAILED"],
+    [new Error("network never-leak-me"), "NETWORK_ERROR"],
+    [new Error("timeout never-leak-me"), "CONNECT_TIMEOUT"]
+  ])("never includes an inline password in mapped error %s", async (connectError, code) => {
     const password = "never-leak-me";
     const created = createSession({
       target: {
@@ -182,12 +190,32 @@ describe("SshSession", () => {
         getPassword: async () => password
       }
     });
-    created.client.connectError = Object.assign(new Error(password), {
-      level: "client-authentication"
-    });
+    created.client.connectError = connectError;
 
     await expect(created.session.connect()).rejects.toMatchObject({
-      code: "AUTH_FAILED",
+      code,
+      message: expect.not.stringContaining(password)
+    });
+  });
+
+  it("does not expose an inline password when host-key confirmation is rejected", async () => {
+    const password = "never-leak-me";
+    const created = createSession({
+      target: {
+        displayName: "Inline",
+        host: "localhost",
+        port: 22,
+        username: "ops",
+        timeoutMs: 15_000,
+        hostKeyId: "inline:v1:localhost:22",
+        getPassword: async () => password
+      },
+      confirmHostKey: async () => false
+    });
+    created.setDecision({ kind: "unknown" });
+
+    await expect(created.session.connect()).rejects.toMatchObject({
+      code: "HOST_KEY_REJECTED",
       message: expect.not.stringContaining(password)
     });
   });

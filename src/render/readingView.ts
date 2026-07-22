@@ -67,8 +67,10 @@ export function registerReadingView(
 /** 把终端清理逻辑接入 Obsidian 的 Component 生命周期。 */
 class TerminalRenderChild implements ReadingRenderChild {
   private unloaded = false;
+  private terminal: { dispose(): void | Promise<void> } | undefined;
 
-  constructor(private readonly terminal: { dispose(): void | Promise<void> }) {
+  constructor(terminal: { dispose(): void | Promise<void> }) {
+    this.terminal = terminal;
   }
 
   /** Obsidian addChild() 会立即调用 load；本适配器没有额外的加载动作。 */
@@ -82,7 +84,9 @@ class TerminalRenderChild implements ReadingRenderChild {
   }
 
   onunload(): void {
-    void this.terminal.dispose();
+    const terminal = this.terminal;
+    this.terminal = undefined;
+    void terminal?.dispose();
   }
 }
 
