@@ -37,7 +37,7 @@ base-ref: 4f114369c4ff8af38a68df49aa015c864806850d
 - Produces: `ProfileSshBlockConfig`、`InlineSshBlockConfig`、`SshBlockConfig` 判别联合。
 - Produces: `parseSshBlock(source: string): SshBlockConfig`，供 Task 2 resolver 消费。
 
-- [ ] **Step 1: 写入失败的 parser 矩阵测试**
+- [x] **Step 1: 写入失败的 parser 矩阵测试**
 
 将现有成功断言更新为带 `mode` 的返回值，并加入以下核心用例：
 
@@ -71,13 +71,13 @@ it.each([
 
 保留现有 invalid YAML、unknown field、height 179/901 和 profile 默认值测试；额外断言任何错误消息不包含哨兵密码 `never-leak-me`。
 
-- [ ] **Step 2: 运行测试并确认 Red**
+- [x] **Step 2: 运行测试并确认 Red**
 
 Run: `npm run test:unit -- tests/unit/parseSshBlock.test.ts`
 
 Expected: FAIL，因为返回值尚无 `mode`，inline 字段仍被拒绝，新错误码不存在。
 
-- [ ] **Step 3: 定义判别联合与错误码**
+- [x] **Step 3: 定义判别联合与错误码**
 
 在 `src/model.ts` 中将 block 类型替换为：
 
@@ -112,7 +112,7 @@ export type SshBlockConfig = ProfileSshBlockConfig | InlineSshBlockConfig;
 | "BLOCK_PORT_INVALID"
 ```
 
-- [ ] **Step 4: 最小实现严格 parser**
+- [x] **Step 4: 最小实现严格 parser**
 
 在 `parseSshBlock.ts` 中定义：
 
@@ -137,13 +137,13 @@ if (hasProfile && hasInline) {
 
 profile 分支复用现有 profile/height 校验并返回 `mode: "profile"`。inline 分支逐项校验：host/username 为 trim 后非空字符串；password 为 `typeof === "string" && length > 0`，保存原字符串；port/height 为范围内整数。错误仅描述字段名。
 
-- [ ] **Step 5: 运行 parser 测试和类型检查**
+- [x] **Step 5: 运行 parser 测试和类型检查**
 
 Run: `npm run test:unit -- tests/unit/parseSshBlock.test.ts && npx tsc --noEmit`
 
 Expected: parser tests PASS；TypeScript 可能因下游仍假设 `profileId` 必有而 FAIL，失败位置应限定在 Task 2/4 将修改的消费者。
 
-- [ ] **Step 6: 提交 Task 1**
+- [x] **Step 6: 提交 Task 1**
 
 ```bash
 git add src/model.ts src/block/parseSshBlock.ts tests/unit/parseSshBlock.test.ts

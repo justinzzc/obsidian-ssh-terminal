@@ -52,8 +52,9 @@ describe("registerReadingView", () => {
       mountTerminal
     });
     const container = document.createElement("div");
-    processor!("password: unsafe", container, { sourcePath: "note.md", addChild: vi.fn() });
-    expect(container.textContent).toContain("Secrets are not allowed");
+    processor!("profile: prod\npassword: unsafe", container, { sourcePath: "note.md", addChild: vi.fn() });
+    expect(container.textContent).toContain("cannot be combined");
+    expect(container.textContent).not.toContain("unsafe");
     expect(mountTerminal).not.toHaveBeenCalled();
   });
 });

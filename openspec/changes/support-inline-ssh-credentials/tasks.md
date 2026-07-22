@@ -1,7 +1,7 @@
 ## 1. Block 模型与解析
 
-- [ ] 1.1 先扩展 `parseSshBlock` 单元测试，覆盖 profile 兼容、最小/完整 inline 配置、默认值、模式混用、缺失字段、YAML 密码类型、端口/高度边界与安全错误文本
-- [ ] 1.2 将 `SshBlockConfig` 改为 profile/inline 判别联合并实现严格解析，确保密码值不裁剪、不回显且未知字段继续被拒绝
+- [x] 1.1 先扩展 `parseSshBlock` 单元测试，覆盖 profile 兼容、最小/完整 inline 配置、默认值、模式混用、缺失字段、YAML 密码类型、端口/高度边界与安全错误文本
+- [x] 1.2 将 `SshBlockConfig` 改为 profile/inline 判别联合并实现严格解析，确保密码值不裁剪、不回显且未知字段继续被拒绝
 
 ## 2. 统一连接目标
 

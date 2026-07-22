@@ -5,6 +5,12 @@ export type PluginErrorCode =
   | "BLOCK_UNKNOWN_FIELD"
   | "BLOCK_SECRET_FORBIDDEN"
   | "BLOCK_HEIGHT_INVALID"
+  | "BLOCK_MODE_CONFLICT"
+  | "BLOCK_HOST_REQUIRED"
+  | "BLOCK_USERNAME_REQUIRED"
+  | "BLOCK_PASSWORD_REQUIRED"
+  | "BLOCK_PASSWORD_INVALID"
+  | "BLOCK_PORT_INVALID"
   | "PROFILE_INVALID"
   | "PROFILE_NOT_FOUND"
   | "CREDENTIAL_STORE_UNAVAILABLE"
@@ -28,11 +34,24 @@ export class PluginError extends Error {
   }
 }
 
-/** Markdown 中 ssh 代码块解析后的最小配置。 */
-export interface SshBlockConfig {
+export interface ProfileSshBlockConfig {
+  mode: "profile";
   profileId: string;
   height: number;
 }
+
+export interface InlineSshBlockConfig {
+  mode: "inline";
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  height: number;
+  timeoutMs: number;
+}
+
+/** Markdown 中 ssh 代码块解析后的配置。 */
+export type SshBlockConfig = ProfileSshBlockConfig | InlineSshBlockConfig;
 
 /** 只包含非敏感信息的 SSH 连接配置。 */
 export interface SshProfile {
