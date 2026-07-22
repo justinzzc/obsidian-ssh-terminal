@@ -8,13 +8,13 @@ subagent_dispatch: null
 tdd_mode: direct
 review_mode: off
 isolation: current
-verify_mode: light
+verify_mode: full
 auto_transition: true
 base_ref: 41e5c8882d99f54f7a3d8f5aa2abaaf4ae9baf5a
 design_doc: null
 plan: null
-verify_result: pending
-verify_failures: 0
+verify_result: fail
+verify_failures: 1
 verification_report: null
 branch_status: pending
 created_at: 2026-07-22
