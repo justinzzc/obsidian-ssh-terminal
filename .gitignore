@@ -4,3 +4,5 @@ main.js
 /styles.css
 release/
 coverage/
+
+.obsidian-*/
