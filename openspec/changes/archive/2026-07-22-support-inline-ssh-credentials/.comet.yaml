@@ -16,13 +16,13 @@ plan: docs/superpowers/plans/2026-07-22-inline-ssh-credentials.md
 verify_result: pass
 verify_failures: 0
 verification_report: docs/superpowers/reports/2026-07-22-support-inline-ssh-credentials-verify.md
-branch_status: pending
+branch_status: handled
 created_at: 2026-07-22
 verified_at: 2026-07-22
 archive_confirmation: confirmed
 archived: true
 direct_override: null
-handoff_context: openspec/changes/support-inline-ssh-credentials/.comet/handoff/design-context.json
+handoff_context: openspec/changes/archive/2026-07-22-support-inline-ssh-credentials/.comet/handoff/design-context.json
 handoff_hash: 1531db132040593d79464063c88e09de3461c985a15069b4c3b90148b7741765
 classic_profile: full
 classic_migration: 1
