@@ -1,10 +1,17 @@
 import { PluginError, type TrustedHostKey } from "../model";
+import { parseInlineHostKeyId } from "../ssh/SshConnectionTarget";
 import type { PluginDataRepository } from "./ProfileStore";
 
 export type HostKeyDecision =
   | { kind: "unknown" }
   | { kind: "trusted" }
   | { kind: "mismatch"; expected: string; received: string };
+
+export interface InlineTrustedHostKey extends TrustedHostKey {
+  id: string;
+  host: string;
+  port: number;
+}
 
 export class HostKeyStore {
   constructor(private readonly repository: PluginDataRepository) {}
@@ -34,6 +41,13 @@ export class HostKeyStore {
 
   get(profileId: string): TrustedHostKey | undefined {
     return this.repository.snapshot().hostKeys[profileId];
+  }
+
+  listInline(): InlineTrustedHostKey[] {
+    return Object.entries(this.repository.snapshot().hostKeys).flatMap(([id, key]) => {
+      const endpoint = parseInlineHostKeyId(id);
+      return endpoint ? [{ id, ...endpoint, ...key }] : [];
+    });
   }
 }
 

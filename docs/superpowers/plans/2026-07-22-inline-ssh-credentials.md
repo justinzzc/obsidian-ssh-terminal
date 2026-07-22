@@ -412,7 +412,7 @@ git commit -m "feat: render inline ssh connection blocks"
 - Produces: `HostKeyStore.listInline(): InlineTrustedHostKey[]`。
 - Produces: `SshSettingsController.forgetInlineHostKey(hostKeyId)`。
 
-- [ ] **Step 1: 写入 HostKeyStore 失败测试**
+- [x] **Step 1: 写入 HostKeyStore 失败测试**
 
 ```ts
 await store.trust("inline:v1:server.example.com:22", "ssh-ed25519", "SHA256:test");
@@ -427,17 +427,17 @@ expect(store.listInline()).toEqual([{
 
 加入损坏 inline key 被忽略、profile key 不出现在 listInline、forget 只删除目标记录测试。
 
-- [ ] **Step 2: 写入 controller/tab 失败测试**
+- [x] **Step 2: 写入 controller/tab 失败测试**
 
 Controller 断言 `forgetInlineHostKey(id)` 调用 hostKeys.forget(id)。Tab 测试用 jsdom/Obsidian mocks 断言 endpoint 与 fingerprint 可见，点击“忘记”经确认后调用 controller，密码字段或值从不出现。
 
-- [ ] **Step 3: 运行设置相关测试确认 Red**
+- [x] **Step 3: 运行设置相关测试确认 Red**
 
 Run: `npm run test:unit -- tests/unit/HostKeyStore.test.ts tests/unit/SshSettingsController.test.ts tests/unit/SshSettingsTab.test.ts`
 
 Expected: FAIL，因为 listInline/UI 尚不存在。
 
-- [ ] **Step 4: 实现 HostKeyStore 枚举和 controller 方法**
+- [x] **Step 4: 实现 HostKeyStore 枚举和 controller 方法**
 
 新增：
 
@@ -458,17 +458,17 @@ listInline(): InlineTrustedHostKey[] {
 
 Controller 只代理 `hostKeys.forget(id)`，不得接触 credentials。
 
-- [ ] **Step 5: 实现设置页区域**
+- [x] **Step 5: 实现设置页区域**
 
 在 profile UI 后渲染“Inline SSH 主机信任”。每条显示 `${host}:${port}` 与 `${algorithm} ${fingerprint}`，忘记按钮复用项目现有确认模式；删除后重新 `display()`。无记录时隐藏区域或显示空状态。
 
-- [ ] **Step 6: 运行设置测试和全量 check**
+- [x] **Step 6: 运行设置测试和全量 check**
 
 Run: `npm run test:unit -- tests/unit/HostKeyStore.test.ts tests/unit/SshSettingsController.test.ts tests/unit/SshSettingsTab.test.ts && npm run check`
 
 Expected: PASS。
 
-- [ ] **Step 7: 提交 Task 5**
+- [x] **Step 7: 提交 Task 5**
 
 ```bash
 git add src/profile/HostKeyStore.ts src/settings/SshSettingsController.ts src/settings/SshSettingsTab.ts tests/unit/HostKeyStore.test.ts tests/unit/SshSettingsController.test.ts tests/unit/SshSettingsTab.test.ts

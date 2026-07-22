@@ -34,4 +34,33 @@ describe("HostKeyStore", () => {
       received: changed
     });
   });
+
+  it("lists only valid inline endpoint trust records", async () => {
+    const store = await createStore();
+    await store.trust("prod", "ssh-ed25519", fingerprint);
+    await store.trust("inline:v1:server.example.com:2222", "ssh-ed25519", fingerprint);
+    await store.trust("inline:v1:broken:not-a-port", "ssh-ed25519", changed);
+
+    expect(store.listInline()).toEqual([{
+      id: "inline:v1:server.example.com:2222",
+      host: "server.example.com",
+      port: 2222,
+      algorithm: "ssh-ed25519",
+      fingerprint
+    }]);
+    expect(JSON.stringify(store.listInline())).not.toContain("password");
+  });
+
+  it("forgets only the selected inline endpoint", async () => {
+    const store = await createStore();
+    const first = "inline:v1:first.example.com:22";
+    const second = "inline:v1:second.example.com:22";
+    await store.trust(first, "ssh-ed25519", fingerprint);
+    await store.trust(second, "ssh-ed25519", changed);
+
+    await store.forget(first);
+
+    expect(store.listInline()).toEqual([expect.objectContaining({ id: second })]);
+    expect(store.check(first, "ssh-ed25519", fingerprint)).toEqual({ kind: "unknown" });
+  });
 });

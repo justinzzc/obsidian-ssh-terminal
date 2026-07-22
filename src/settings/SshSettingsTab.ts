@@ -1,4 +1,4 @@
-import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { Notice, PluginSettingTab, Setting, type App, type Plugin } from "./obsidianApi";
 import type { SshProfile } from "../model";
 import type { HostKeyStore } from "../profile/HostKeyStore";
 import type { ProfileStore } from "../profile/ProfileStore";
@@ -26,6 +26,7 @@ export class SshSettingsTab extends PluginSettingTab {
 
     for (const profile of this.profiles.list()) this.renderProfile(containerEl, profile);
     this.renderProfile(containerEl);
+    this.renderInlineHostKeys(containerEl);
   }
 
   private renderProfile(container: HTMLElement, existing?: SshProfile): void {
@@ -83,6 +84,27 @@ export class SshSettingsTab extends PluginSettingTab {
         await this.controller.delete(existing.id);
         this.display();
       }));
+  }
+
+  private renderInlineHostKeys(container: HTMLElement): void {
+    const trustedHosts = this.hostKeys.listInline();
+    if (trustedHosts.length === 0) return;
+
+    container.createEl("h2", { text: "Inline SSH 主机信任" });
+    container.createEl("p", {
+      text: "以下主机指纹来自 Markdown 中的 inline SSH 连接；忘记后，下次连接需要重新确认。"
+    });
+    for (const trusted of trustedHosts) {
+      new Setting(container)
+        .setName(`${trusted.host}:${trusted.port}`)
+        .setDesc(`${trusted.algorithm} ${trusted.fingerprint}`)
+        .addButton((button) => button.setButtonText("忘记").setWarning().onClick(async () => {
+          if (!window.confirm(`确定忘记 ${trusted.host}:${trusted.port} 的主机指纹吗？`)) return;
+          await this.controller.forgetInlineHostKey(trusted.id);
+          new Notice("已忘记 inline SSH 主机指纹，下次连接将重新确认");
+          this.display();
+        }));
+    }
   }
 }
 

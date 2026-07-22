@@ -29,4 +29,8 @@ export class SshSettingsController {
   async forgetHostKey(profileId: string): Promise<void> {
     await this.hostKeys.forget(profileId);
   }
+
+  async forgetInlineHostKey(hostKeyId: string): Promise<void> {
+    await this.hostKeys.forget(hostKeyId);
+  }
 }

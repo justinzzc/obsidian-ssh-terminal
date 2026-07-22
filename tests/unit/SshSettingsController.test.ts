@@ -32,4 +32,15 @@ describe("SshSettingsController", () => {
     )).rejects.toMatchObject({ code: "CREDENTIAL_STORE_UNAVAILABLE" });
     expect(profiles.save).not.toHaveBeenCalled();
   });
+
+  it("forgets inline host trust without touching credentials", async () => {
+    const credentials = { deletePassword: vi.fn(async () => undefined) };
+    const hostKeys = { forget: vi.fn(async () => undefined) };
+    const controller = new SshSettingsController({} as never, credentials as never, hostKeys as never);
+
+    await controller.forgetInlineHostKey("inline:v1:server.example.com:22");
+
+    expect(hostKeys.forget).toHaveBeenCalledWith("inline:v1:server.example.com:22");
+    expect(credentials.deletePassword).not.toHaveBeenCalled();
+  });
 });
