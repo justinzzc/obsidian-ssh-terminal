@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CredentialStore } from "../../src/profile/CredentialStore";
 import type { HostKeyDecision } from "../../src/profile/HostKeyStore";
 import {
   SshSession,
@@ -10,6 +9,7 @@ import type {
   SshConnectOptions,
   SshShellStream
 } from "../../src/ssh/SshClientAdapter";
+import type { SshConnectionTarget } from "../../src/ssh/SshConnectionTarget";
 
 class FakeStream implements SshShellStream {
   writes: string[] = [];
@@ -41,9 +41,11 @@ class FakeClient implements SshClientAdapter {
   readonly stream = new FakeStream();
   decision: HostKeyDecision = { kind: "trusted" };
   connectError?: Error;
+  options?: SshConnectOptions;
 
   async connect(options: SshConnectOptions): Promise<void> {
     this.connectCalls += 1;
+    this.options = options;
     await options.verifyHostKey("ssh-ed25519", "SHA256:test");
     if (this.connectError) throw this.connectError;
   }
@@ -53,11 +55,14 @@ class FakeClient implements SshClientAdapter {
 
 function createSession(overrides: Partial<SshSessionDependencies> = {}) {
   const client = new FakeClient();
-  const credentials: CredentialStore = {
-    isAvailable: async () => true,
-    getPassword: async () => "secret",
-    setPassword: async () => undefined,
-    deletePassword: async () => undefined
+  const target: SshConnectionTarget = {
+    displayName: "Prod",
+    host: "localhost",
+    port: 22,
+    username: "ops",
+    timeoutMs: 15_000,
+    hostKeyId: "prod",
+    getPassword: vi.fn(async () => "secret")
   };
   let decision: HostKeyDecision = { kind: "trusted" };
   const hostKeys = {
@@ -65,8 +70,7 @@ function createSession(overrides: Partial<SshSessionDependencies> = {}) {
     trust: vi.fn(async () => undefined)
   };
   const dependencies: SshSessionDependencies = {
-    profile: { id: "prod", name: "Prod", host: "localhost", port: 22, username: "ops", timeoutMs: 15_000 },
-    credentials,
+    target,
     hostKeys,
     clientFactory: () => client,
     confirmHostKey: async () => true,
@@ -98,6 +102,13 @@ describe("SshSession", () => {
 
     expect(output).toEqual(["ready\r\n"]);
     expect(client.stream.writes).toEqual(["whoami\r"]);
+    expect(client.options).toMatchObject({
+      host: "localhost",
+      port: 22,
+      username: "ops",
+      password: "secret",
+      timeoutMs: 15_000
+    });
     expect(session.state).toBe("connected");
   });
 
@@ -143,14 +154,41 @@ describe("SshSession", () => {
   });
 
   it("reports a missing credential without contacting the server", async () => {
-    const credentials: CredentialStore = {
-      isAvailable: async () => true,
-      getPassword: async () => null,
-      setPassword: async () => undefined,
-      deletePassword: async () => undefined
-    };
-    const { session, client } = createSession({ credentials });
+    const { session, client } = createSession({
+      target: {
+        displayName: "Missing",
+        host: "localhost",
+        port: 22,
+        username: "ops",
+        timeoutMs: 15_000,
+        hostKeyId: "missing",
+        getPassword: async () => null
+      }
+    });
     await expect(session.connect()).rejects.toMatchObject({ code: "CREDENTIAL_MISSING" });
     expect(client.connectCalls).toBe(0);
+  });
+
+  it("never includes an inline password in mapped errors", async () => {
+    const password = "never-leak-me";
+    const created = createSession({
+      target: {
+        displayName: "Inline",
+        host: "localhost",
+        port: 22,
+        username: "ops",
+        timeoutMs: 15_000,
+        hostKeyId: "inline:v1:localhost:22",
+        getPassword: async () => password
+      }
+    });
+    created.client.connectError = Object.assign(new Error(password), {
+      level: "client-authentication"
+    });
+
+    await expect(created.session.connect()).rejects.toMatchObject({
+      code: "AUTH_FAILED",
+      message: expect.not.stringContaining(password)
+    });
   });
 });

@@ -41,9 +41,8 @@ export default class SshTerminalPlugin extends Plugin {
     const hostKeys = new HostKeyStore(repository);
 
     // 每个渲染块创建独立 SshSession，但共享 profile、凭据与主机信任存储。
-    this.sessionManager = new SessionManager(profiles, (profile) => new SshSession({
-      profile,
-      credentials,
+    this.sessionManager = new SessionManager((target) => new SshSession({
+      target,
       hostKeys,
       clientFactory: () => new Ssh2ClientAdapter(),
       confirmHostKey: (prompt) => confirmHostKey(this.app, prompt)

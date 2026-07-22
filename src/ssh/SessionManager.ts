@@ -1,12 +1,8 @@
-import { PluginError, type SshProfile } from "../model";
 import type { SshSession } from "./SshSession";
+import type { SshConnectionTarget } from "./SshConnectionTarget";
 
 export type ManagedSession = Pick<SshSession, "connect" | "close" | "write" | "resize" | "onData" | "onStateChange">;
-export type ManagedSessionFactory = (profile: SshProfile) => ManagedSession;
-
-export interface ProfileLookup {
-  get(profileId: string): SshProfile | undefined;
-}
+export type ManagedSessionFactory = (target: SshConnectionTarget) => ManagedSession;
 
 interface SessionEntry {
   session: ManagedSession;
@@ -19,22 +15,14 @@ interface SessionEntry {
 export class SessionManager {
   private readonly entries = new Map<string, SessionEntry>();
 
-  constructor(
-    private readonly profiles: ProfileLookup,
-    private readonly sessionFactory: ManagedSessionFactory
-  ) {}
+  constructor(private readonly sessionFactory: ManagedSessionFactory) {}
 
-  connect(instanceId: string, profileId: string): Promise<ManagedSession> {
+  connect(instanceId: string, target: SshConnectionTarget): Promise<ManagedSession> {
     // 保存并复用正在进行的 Promise，抑制双击连接造成的并发会话。
     const existing = this.entries.get(instanceId);
     if (existing) return existing.connecting;
 
-    const profile = this.profiles.get(profileId);
-    if (!profile) {
-      return Promise.reject(new PluginError("PROFILE_NOT_FOUND", `SSH profile not found: ${profileId}`));
-    }
-
-    const session = this.sessionFactory(profile);
+    const session = this.sessionFactory(target);
     const connecting = session.connect().then(
       () => session,
       (error: unknown) => {

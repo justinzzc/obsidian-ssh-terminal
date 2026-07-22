@@ -263,7 +263,7 @@ git commit -m "feat: resolve ssh connection targets"
 - Produces: `SessionManager.connect(instanceId: string, target: SshConnectionTarget)`。
 - Produces: `SshSessionDependencies { target, hostKeys, clientFactory, confirmHostKey }`。
 
-- [ ] **Step 1: 先把 session 测试 fixture 改为 target**
+- [x] **Step 1: 先把 session 测试 fixture 改为 target**
 
 用以下 target 替换 `profile + credentials`：
 
@@ -283,13 +283,13 @@ const target: SshConnectionTarget = {
 
 SessionManager 测试改为直接传 target，并断言同 instance 双击复用 Promise、失败后可重试、closeAll 移除所有 entry。
 
-- [ ] **Step 2: 运行测试并确认 Red**
+- [x] **Step 2: 运行测试并确认 Red**
 
 Run: `npm run test:unit -- tests/unit/SshSession.test.ts tests/unit/SessionManager.test.ts`
 
 Expected: FAIL，因为生产接口仍接收 profile ID/credentials。
 
-- [ ] **Step 3: 重构 SshSession**
+- [x] **Step 3: 重构 SshSession**
 
 将依赖改为：
 
@@ -304,7 +304,7 @@ export interface SshSessionDependencies {
 
 `connect()` 调用 `target.getPassword()`，然后使用 target 的 host/port/username/timeout。`verifyHostKey()` 使用 `target.hostKeyId`；可保留 HostKeyPrompt 的内部字段名或将其改为 `hostKeyId`，但 Modal 只显示 host、port、algorithm、fingerprint。
 
-- [ ] **Step 4: 重构 SessionManager 和 main 装配**
+- [x] **Step 4: 重构 SessionManager 和 main 装配**
 
 `SessionManager` 移除 ProfileLookup 构造参数：
 
@@ -316,13 +316,13 @@ connect(instanceId: string, target: SshConnectionTarget): Promise<ManagedSession
 
 `main.ts` 创建 manager 时把 target 直接传给 `new SshSession({ target, hostKeys, ... })`。ProfileStore/CredentialStore 仍提供给 renderer resolver 和设置页。
 
-- [ ] **Step 5: 运行 session/manager 测试和类型检查**
+- [x] **Step 5: 运行 session/manager 测试和类型检查**
 
 Run: `npm run test:unit -- tests/unit/SshSession.test.ts tests/unit/SessionManager.test.ts && npx tsc --noEmit`
 
 Expected: 两个测试文件 PASS；类型错误只剩 TerminalView/renderers 的旧接口。
 
-- [ ] **Step 6: 提交 Task 3**
+- [x] **Step 6: 提交 Task 3**
 
 ```bash
 git add src/ssh/SshSession.ts src/ssh/SessionManager.ts src/main.ts tests/unit/SshSession.test.ts tests/unit/SessionManager.test.ts

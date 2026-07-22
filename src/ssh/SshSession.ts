@@ -1,5 +1,4 @@
-import { PluginError, type SshProfile } from "../model";
-import type { CredentialStore } from "../profile/CredentialStore";
+import { PluginError } from "../model";
 import type { HostKeyDecision } from "../profile/HostKeyStore";
 import type {
   Disposable,
@@ -7,6 +6,7 @@ import type {
   SshClientFactory,
   SshShellStream
 } from "./SshClientAdapter";
+import type { SshConnectionTarget } from "./SshConnectionTarget";
 
 export type SshSessionState =
   | "idle"
@@ -31,8 +31,7 @@ export interface HostKeyAccess {
 }
 
 export interface SshSessionDependencies {
-  profile: SshProfile;
-  credentials: CredentialStore;
+  target: SshConnectionTarget;
   hostKeys: HostKeyAccess;
   clientFactory: SshClientFactory;
   confirmHostKey(prompt: HostKeyPrompt): Promise<boolean>;
@@ -71,7 +70,7 @@ export class SshSession {
     this.resetConnection();
     try {
       // 在创建网络客户端之前读取凭据，缺少密码时不会产生任何网络请求。
-      const password = await this.dependencies.credentials.getPassword(this.dependencies.profile.id);
+      const password = await this.dependencies.target.getPassword();
       if (password === null) {
         throw new PluginError("CREDENTIAL_MISSING", "No password is saved for this SSH profile.");
       }
@@ -80,11 +79,11 @@ export class SshSession {
       this.client = client;
       this.setState("verifying-host");
       await client.connect({
-        host: this.dependencies.profile.host,
-        port: this.dependencies.profile.port,
-        username: this.dependencies.profile.username,
+        host: this.dependencies.target.host,
+        port: this.dependencies.target.port,
+        username: this.dependencies.target.username,
         password,
-        timeoutMs: this.dependencies.profile.timeoutMs,
+        timeoutMs: this.dependencies.target.timeoutMs,
         verifyHostKey: (algorithm, fingerprint) => this.verifyHostKey(algorithm, fingerprint)
       });
 
@@ -122,8 +121,8 @@ export class SshSession {
   }
 
   private async verifyHostKey(algorithm: string, fingerprint: string): Promise<void> {
-    const profile = this.dependencies.profile;
-    const decision = this.dependencies.hostKeys.check(profile.id, algorithm, fingerprint);
+    const target = this.dependencies.target;
+    const decision = this.dependencies.hostKeys.check(target.hostKeyId, algorithm, fingerprint);
     if (decision.kind === "mismatch") {
       // 指纹变化必须阻断，普通重连不能绕过。
       throw new PluginError("HOST_KEY_MISMATCH", "The SSH server host key has changed.");
@@ -131,16 +130,16 @@ export class SshSession {
     if (decision.kind === "trusted") return;
 
     const accepted = await this.dependencies.confirmHostKey({
-      profileId: profile.id,
-      host: profile.host,
-      port: profile.port,
+      profileId: target.hostKeyId,
+      host: target.host,
+      port: target.port,
       algorithm,
       fingerprint
     });
     if (!accepted) {
       throw new PluginError("HOST_KEY_REJECTED", "The SSH server host key was not trusted.");
     }
-    await this.dependencies.hostKeys.trust(profile.id, algorithm, fingerprint);
+    await this.dependencies.hostKeys.trust(target.hostKeyId, algorithm, fingerprint);
   }
 
   private async performClose(): Promise<void> {

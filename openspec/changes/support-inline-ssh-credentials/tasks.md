@@ -10,9 +10,9 @@
 
 ## 3. 会话与管理器重构
 
-- [ ] 3.1 先更新 `SshSession` 和 `SessionManager` 测试，使连接入口接受统一目标，并证明 profile 模式仍从钥匙串取密、inline 模式不依赖或写入 `CredentialStore`
-- [ ] 3.2 重构 `SessionManager`、`SshSession` 与插件装配以使用连接目标和密码提供器，同时保持网络前取密、TOFU 校验、安全错误映射与幂等释放
-- [ ] 3.3 增加秘密泄露回归断言，确保认证/网络/主机校验失败及插件持久化数据、状态文本和测试快照均不包含 inline 密码哨兵值
+- [x] 3.1 先更新 `SshSession` 和 `SessionManager` 测试，使连接入口接受统一目标，并证明 profile 模式仍从钥匙串取密、inline 模式不依赖或写入 `CredentialStore`
+- [x] 3.2 重构 `SessionManager`、`SshSession` 与插件装配以使用连接目标和密码提供器，同时保持网络前取密、TOFU 校验、安全错误映射与幂等释放
+- [x] 3.3 增加秘密泄露回归断言，确保认证/网络/主机校验失败及插件持久化数据、状态文本和测试快照均不包含 inline 密码哨兵值
 
 ## 4. 阅读视图与实时预览
 
