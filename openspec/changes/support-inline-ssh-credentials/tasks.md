@@ -26,6 +26,6 @@
 
 ## 6. 文档与验证
 
-- [ ] 6.1 更新 README，加入 profile 与 inline 两种 block 示例、字段/default 说明、密码加引号提示以及 Markdown/同步/备份/Git 明文风险警告
-- [ ] 6.2 运行完整单元测试、TypeScript 检查与生产构建，并修复所有回归
-- [ ] 6.3 使用 Docker SSH fixture 增加或更新 inline 密码集成场景，并执行秘密扫描确认仓库产物未意外包含测试密码
+- [x] 6.1 更新 README，加入 profile 与 inline 两种 block 示例、字段/default 说明、密码加引号提示以及 Markdown/同步/备份/Git 明文风险警告
+- [x] 6.2 运行完整单元测试、TypeScript 检查与生产构建，并修复所有回归
+- [x] 6.3 使用 Docker SSH fixture 增加或更新 inline 密码集成场景，并执行秘密扫描确认仓库产物未意外包含测试密码

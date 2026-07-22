@@ -3,6 +3,7 @@ import { connect } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { HostKeyDecision } from "../../src/profile/HostKeyStore";
 import { Ssh2ClientAdapter } from "../../src/ssh/SshClientAdapter";
+import { createInlineHostKeyId } from "../../src/ssh/SshConnectionTarget";
 import { SshSession } from "../../src/ssh/SshSession";
 
 const password = process.env.OBSIDIAN_SSH_TEST_PASSWORD;
@@ -37,8 +38,10 @@ afterAll(() => {
 describe("production SSH adapter", () => {
   it("opens a verified PTY and exchanges terminal data", async () => {
     let trusted: { algorithm: string; fingerprint: string } | undefined;
+    let checkedHostKeyId: string | undefined;
     const hostKeys = {
-      check: (_profileId: string, algorithm: string, fingerprint: string): HostKeyDecision => {
+      check: (hostKeyId: string, algorithm: string, fingerprint: string): HostKeyDecision => {
+        checkedHostKeyId = hostKeyId;
         if (!trusted) return { kind: "unknown" };
         return trusted.algorithm === algorithm && trusted.fingerprint === fingerprint
           ? { kind: "trusted" }
@@ -50,12 +53,12 @@ describe("production SSH adapter", () => {
     };
     const session = new SshSession({
       target: {
-        displayName: "Docker",
+        displayName: `obsidian-test@127.0.0.1:${port}`,
         host: "127.0.0.1",
         port,
         username: "obsidian-test",
         timeoutMs: 10_000,
-        hostKeyId: "docker",
+        hostKeyId: createInlineHostKeyId("127.0.0.1", port),
         getPassword: async () => password
       },
       hostKeys,
@@ -71,6 +74,7 @@ describe("production SSH adapter", () => {
     await waitFor(() => output.includes("ready"));
     expect(output).toContain("ready");
     expect(trusted?.fingerprint).toMatch(/^SHA256:/);
+    expect(checkedHostKeyId).toBe(`inline:v1:127.0.0.1:${port}`);
     await session.close();
   }, 20_000);
 });

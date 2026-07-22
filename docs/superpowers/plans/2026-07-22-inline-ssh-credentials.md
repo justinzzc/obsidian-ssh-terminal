@@ -486,7 +486,7 @@ git commit -m "feat: manage inline ssh host trust"
 - Consumes: 生产 `SshConnectionTarget`、`SshSession`、`Ssh2ClientAdapter`。
 - Produces: 用户可复制的 inline block 文档与真实连接证据。
 
-- [ ] **Step 1: 先增加 inline 集成测试**
+- [x] **Step 1: 先增加 inline 集成测试**
 
 在现有 Docker fixture 测试中构造：
 
@@ -504,7 +504,7 @@ const target: SshConnectionTarget = {
 
 通过生产 adapter 建立 session、确认 host key、执行 `printf 'ready\n'`、验证输出、resize 并关闭。密码继续仅来自 `OBSIDIAN_SSH_TEST_PASSWORD`。
 
-- [ ] **Step 2: 构建 Docker fixture 并确认测试状态**
+- [x] **Step 2: 构建 Docker fixture 并确认测试状态**
 
 Run: `docker build -t obsidian-ssh-test tests/fixtures/sshd`
 
@@ -512,7 +512,7 @@ Run: `$env:OBSIDIAN_SSH_TEST_PASSWORD='temporary-inline-test-value'; npm run tes
 
 Expected: PASS；若因接口尚未完全接入而 FAIL，修正仅限测试 fixture/target 装配，不改变 spec。
 
-- [ ] **Step 3: 更新 README**
+- [x] **Step 3: 更新 README**
 
 加入 profile 示例和以下 inline 示例：
 
@@ -526,7 +526,7 @@ height: 360
 
 在示例紧邻位置明确说明密码会进入 Markdown、Obsidian Sync、云盘、备份和 Git 历史；需要保护秘密时使用 profile + 系统钥匙串。说明数字/特殊字符密码需要 YAML 引号、两种模式不得混用、inline 仍执行主机指纹确认。
 
-- [ ] **Step 4: 运行全量验证**
+- [x] **Step 4: 运行全量验证**
 
 Run: `npm run check`
 
@@ -544,7 +544,7 @@ Run: `rg -n -S "never-leak-me|temporary-inline-test-value" . -g '!node_modules/*
 
 Expected: 不在生产源码、README、构建产物或测试 snapshot 中发现密码；测试源码中的明确哨兵断言可以逐项审核后保留。
 
-- [ ] **Step 5: 勾选 OpenSpec tasks 并核对变更范围**
+- [x] **Step 5: 勾选 OpenSpec tasks 并核对变更范围**
 
 把 `openspec/changes/support-inline-ssh-credentials/tasks.md` 中已由测试和提交证明完成的 15 项全部改为 `[x]`。运行：
 
@@ -552,7 +552,7 @@ Run: `openspec validate support-inline-ssh-credentials --json`
 
 Expected: `valid: true`，无 issues。
 
-- [ ] **Step 6: 提交 Task 6**
+- [x] **Step 6: 提交 Task 6**
 
 ```bash
 git add README.md tests/integration/ssh.test.ts openspec/changes/support-inline-ssh-credentials/tasks.md
