@@ -55,13 +55,14 @@ describe("ObsidianTerminalThemeSync", () => {
     sync.start();
     container.style.setProperty("--background-primary", "rgb(250, 250, 250)");
     container.style.setProperty("--text-normal", "rgb(10, 10, 10)");
-    FakeMutationObserver.instances[0].trigger();
+    const observer = FakeMutationObserver.instances[0]!;
+    observer.trigger();
 
     expect(terminal.options.theme).toMatchObject({
       background: "rgb(250, 250, 250)",
       foreground: "rgb(10, 10, 10)"
     });
     sync.dispose();
-    expect(FakeMutationObserver.instances[0].disconnect).toHaveBeenCalledOnce();
+    expect(observer.disconnect).toHaveBeenCalledOnce();
   });
 });

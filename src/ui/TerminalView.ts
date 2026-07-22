@@ -3,6 +3,7 @@ import { Terminal } from "@xterm/xterm";
 import type { SshProfile } from "../model";
 import type { Disposable } from "../ssh/SshClientAdapter";
 import type { ManagedSession } from "../ssh/SessionManager";
+import { ObsidianTerminalThemeSync } from "./ObsidianTerminalThemeSync";
 
 export interface TerminalAdapter {
   readonly rows: number;
@@ -184,10 +185,10 @@ class XtermAdapter implements TerminalAdapter {
   private readonly terminal = new Terminal({
     convertEol: true,
     cursorBlink: true,
-    fontFamily: "var(--font-monospace)",
-    theme: { background: "#00000000" }
+    fontFamily: "var(--font-monospace)"
   });
   private readonly fitAddon = new FitAddon();
+  private themeSync: ObsidianTerminalThemeSync | undefined;
 
   constructor() {
     this.terminal.loadAddon(this.fitAddon);
@@ -195,12 +196,21 @@ class XtermAdapter implements TerminalAdapter {
 
   get rows(): number { return this.terminal.rows; }
   get cols(): number { return this.terminal.cols; }
-  open(container: HTMLElement): void { this.terminal.open(container); }
+  open(container: HTMLElement): void {
+    // xterm 使用 Canvas/DOM 自己绘制文字，必须把 Obsidian 计算后的主题色显式传入。
+    this.themeSync = new ObsidianTerminalThemeSync(container, this.terminal);
+    this.themeSync.start();
+    this.terminal.open(container);
+  }
   write(data: string): void { this.terminal.write(data); }
   clear(): void { this.terminal.clear(); }
   fit(): void { this.fitAddon.fit(); }
   focus(): void { this.terminal.focus(); }
-  dispose(): void { this.terminal.dispose(); }
+  dispose(): void {
+    this.themeSync?.dispose();
+    this.themeSync = undefined;
+    this.terminal.dispose();
+  }
   onData(handler: (data: string) => void): Disposable { return this.terminal.onData(handler); }
 }
 
