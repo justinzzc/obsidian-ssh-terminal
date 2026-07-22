@@ -4,6 +4,8 @@ import type { SessionManager } from "../ssh/SessionManager";
 import { TerminalView, type TerminalViewOptions } from "../ui/TerminalView";
 
 export interface ReadingRenderChild {
+  load(): void;
+  unload(): void;
   onunload(): void;
 }
 
@@ -54,15 +56,35 @@ export function registerReadingView(
         height: block.height,
         manager: dependencies.manager
       });
-      context.addChild({
-        onunload: () => {
-          void terminal.dispose();
-        }
-      });
+      // MarkdownRenderContext.addChild 只接受 Obsidian Component；普通对象缺少 load()，
+      // 会在阅读视图初始化时直接抛错并把已经挂载的终端替换成错误块。
+      context.addChild(new TerminalRenderChild(terminal));
     } catch (error) {
       renderError(container, error instanceof Error ? error.message : "Invalid SSH block.");
     }
   });
+}
+
+/** 把终端清理逻辑接入 Obsidian 的 Component 生命周期。 */
+class TerminalRenderChild implements ReadingRenderChild {
+  private unloaded = false;
+
+  constructor(private readonly terminal: { dispose(): void | Promise<void> }) {
+  }
+
+  /** Obsidian addChild() 会立即调用 load；本适配器没有额外的加载动作。 */
+  load(): void {}
+
+  /** 模拟 Component 的幂等卸载语义，避免同一终端重复释放。 */
+  unload(): void {
+    if (this.unloaded) return;
+    this.unloaded = true;
+    this.onunload();
+  }
+
+  onunload(): void {
+    void this.terminal.dispose();
+  }
 }
 
 function renderError(container: HTMLElement, message: string): void {

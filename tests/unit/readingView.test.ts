@@ -24,14 +24,20 @@ describe("registerReadingView", () => {
       mountTerminal
     });
     const container = document.createElement("div");
-    let child: { onunload(): void } | undefined;
+    let child: { load(): void; unload(): void; onunload(): void } | undefined;
     processor!("profile: prod", container, {
       sourcePath: "note.md",
-      addChild: (value) => { child = value; }
+      addChild: (value) => {
+        // Obsidian 的 MarkdownRenderContext.addChild 会立即调用子组件的 load()。
+        // 回归测试必须模拟这一行为，防止再次传入只有 onunload 的普通对象。
+        expect(typeof (value as unknown as { load?: unknown }).load).toBe("function");
+        (value as unknown as { load(): void }).load();
+        child = value;
+      }
     });
 
     expect(mountTerminal).toHaveBeenCalledOnce();
-    child!.onunload();
+    child!.unload();
     expect(disposable.dispose).toHaveBeenCalledOnce();
   });
 
