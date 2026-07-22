@@ -26,7 +26,7 @@ export interface TerminalSessionManager {
 
 export interface TerminalViewOptions {
   instanceId: string;
-  target: SshConnectionTarget;
+  createTarget(): SshConnectionTarget;
   height: number;
   manager: TerminalSessionManager;
   terminalFactory?: () => TerminalAdapter;
@@ -47,8 +47,7 @@ export class TerminalView {
   private readonly disconnectButton: HTMLButtonElement;
   private readonly disposables: Disposable[] = [];
   private readonly sessionDisposables: Disposable[] = [];
-  private readonly options: Omit<TerminalViewOptions, "target">;
-  private target: SshConnectionTarget | undefined;
+  private readonly options: TerminalViewOptions;
   private connecting: Promise<void> | undefined;
   private disposePromise: Promise<void> | undefined;
   private resizeObserver: ResizeObserver | undefined;
@@ -58,9 +57,8 @@ export class TerminalView {
     container: HTMLElement,
     options: TerminalViewOptions
   ) {
-    const { target, ...retainedOptions } = options;
-    this.options = retainedOptions;
-    this.target = target;
+    this.options = options;
+    const displayTarget = options.createTarget();
     this.terminal = (options.terminalFactory ?? createXtermAdapter)();
     this.root = document.createElement("div");
     this.root.className = "ssh-terminal";
@@ -71,7 +69,7 @@ export class TerminalView {
     toolbar.className = "ssh-terminal__toolbar";
     this.status = document.createElement("span");
     this.status.className = "ssh-terminal__status";
-    this.status.textContent = `${options.target.displayName} · Disconnected`;
+    this.status.textContent = `${displayTarget.displayName} · Disconnected`;
     toolbar.append(this.status);
 
     this.connectButton = createButton("Connect", "connect", () => void this.connect());
@@ -107,8 +105,14 @@ export class TerminalView {
 
   private connect(): Promise<void> {
     if (this.connecting) return this.connecting;
-    const target = this.target;
-    if (this.disposed || !target) return Promise.resolve();
+    if (this.disposed) return Promise.resolve();
+    let target: SshConnectionTarget;
+    try {
+      target = this.options.createTarget();
+    } catch (error) {
+      this.showError(error);
+      return Promise.resolve();
+    }
     this.error.hidden = true;
     this.connectButton.disabled = true;
     this.status.textContent = "Connecting…";
@@ -152,7 +156,6 @@ export class TerminalView {
 
   private async performDispose(): Promise<void> {
     this.disposed = true;
-    this.target = undefined;
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
     this.root.removeEventListener("keydown", this.onKeyDown);

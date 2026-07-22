@@ -72,7 +72,7 @@ describe("createLivePreviewExtension", () => {
     document.body.append(parent);
     const view = new EditorView({ state, parent });
 
-    const mountedTarget = mountTerminal.mock.calls[0]?.[1].target;
+    const mountedTarget = mountTerminal.mock.calls[0]?.[1].createTarget();
     if (!mountedTarget) throw new Error("Expected inline terminal to mount.");
     expect(mountedTarget).toMatchObject({ host: "host", username: "ops" });
     expect(await mountedTarget.getPassword()).toBe("never-leak-me");

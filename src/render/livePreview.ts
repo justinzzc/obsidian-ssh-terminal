@@ -98,11 +98,13 @@ class SshTerminalWidget extends WidgetType {
     container.className = "ssh-terminal-live-preview";
     try {
       const config = parseSshBlock(this.block.source);
-      const target = resolveSshConnectionTarget(config, this.dependencies);
       const mountTerminal = this.dependencies.mountTerminal ?? TerminalView.mount;
       this.mounted = mountTerminal(container, {
         instanceId: `${this.dependencies.sourcePath()}:live:${this.block.from}:${this.block.to}`,
-        target,
+        createTarget: () => resolveSshConnectionTarget(
+          parseSshBlock(this.block.source),
+          this.dependencies
+        ),
         height: config.height,
         manager: this.dependencies.manager,
         returnFocus: () => view.focus()

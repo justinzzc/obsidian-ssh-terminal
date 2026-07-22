@@ -44,7 +44,7 @@ describe("registerReadingView", () => {
     });
 
     expect(mountTerminal).toHaveBeenCalledOnce();
-    expect(mountTerminal.mock.calls[0]?.[1].target).toMatchObject({
+    expect(mountTerminal.mock.calls[0]?.[1].createTarget()).toMatchObject({
       displayName: "Prod",
       hostKeyId: "prod"
     });
@@ -94,7 +94,7 @@ describe("registerReadingView", () => {
       addChild: vi.fn()
     });
 
-    const mountedTarget = mountTerminal.mock.calls[0]?.[1].target;
+    const mountedTarget = mountTerminal.mock.calls[0]?.[1].createTarget();
     if (!mountedTarget) throw new Error("Expected inline terminal to mount.");
     expect(mountedTarget).toMatchObject({ host: "host", port: 22, username: "ops" });
     expect(await mountedTarget.getPassword()).toBe("never-leak-me");

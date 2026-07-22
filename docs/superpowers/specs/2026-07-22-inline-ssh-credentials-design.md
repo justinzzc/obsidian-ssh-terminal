@@ -95,7 +95,7 @@ interface SshConnectionTarget {
 
 ### 3.3 下游接口变化
 
-`TerminalViewOptions.profile` 替换为 `target`。`TerminalSessionManager.connect(instanceId, profileId)` 改为 `connect(instanceId, target)`。`ManagedSessionFactory` 接受 target 并构造 `SshSession`。
+`TerminalViewOptions.profile` 替换为 `createTarget()`。renderer 通过当前 Markdown source 每次重新解析临时 target，TerminalView 不长期保存 target/password provider。`TerminalSessionManager.connect(instanceId, profileId)` 改为 `connect(instanceId, target)`。`ManagedSessionFactory` 接受 target 并构造 `SshSession`。
 
 `SessionManager` 继续只负责每个渲染实例的并发抑制、会话所有权和关闭，不访问 Markdown、ProfileStore 或 CredentialStore。
 
@@ -108,14 +108,14 @@ inline 密码的数据路径为：
 ```text
 CodeMirror/Markdown source
   → parsed InlineSshBlockConfig
-  → SshConnectionTarget.getPassword closure
+  → per-connect SshConnectionTarget.getPassword closure
   → SshSession local password
   → ssh2 ConnectConfig
 ```
 
 密码不经过 ProfileStore、CredentialStore、HostKeyStore 或插件持久化仓库。系统钥匙串不可用不得阻止 inline 连接。
 
-视图销毁、block 编辑重建、用户断开或插件卸载时，现有终端清理链继续关闭 manager entry、session、stream 和 client，并释放对 target 的引用。JavaScript 字符串不可可靠原地清零，因此实现和文档不得声称提供内存擦除。
+TerminalView 仅保存从当前 Markdown source 重新解析 target 的工厂；连接期间创建的 target 由 manager/session 临时持有。视图销毁、block 编辑重建、用户断开或插件卸载时，清理链关闭 manager entry、session、stream 和 client，并释放对 target 的引用。JavaScript 字符串不可可靠原地清零，因此实现和文档不得声称提供内存擦除。
 
 禁止以下行为：
 
@@ -153,9 +153,9 @@ inline:v1:<encodeURIComponent(normalizedHost)>:<port>
 阅读视图处理流程：
 
 1. `parseSshBlock(source)`。
-2. `resolveSshConnectionTarget(config, dependencies)`。
+2. 创建按当前 source 调用 `parseSshBlock` 与 `resolveSshConnectionTarget` 的 target 工厂。
 3. 创建唯一 instance ID。
-4. `TerminalView.mount` 接收 target。
+4. `TerminalView.mount` 接收 target 工厂，并在每次连接时创建临时 target。
 5. `MarkdownRenderChild.onunload` 释放 terminal 和会话。
 
 实时预览保持现有 fenced block 识别与选区行为。widget 的等价性仍比较 block 范围、源码和 source path；编辑任何 inline 字段都会销毁旧 widget、释放旧 target 和会话，并用新源码创建新 widget。

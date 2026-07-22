@@ -10,7 +10,7 @@ base-ref: 4f114369c4ff8af38a68df49aa015c864806850d
 
 **Goal:** 让 Obsidian `ssh` block 在保留 profile + 系统钥匙串模式的同时，支持直接填写 host、port、username 和明文 password，并继续执行严格的主机密钥校验。
 
-**Architecture:** 解析器返回 profile/inline 判别联合；共享 resolver 把两种配置转换为统一 `SshConnectionTarget`。渲染器、TerminalView、SessionManager 和 SshSession 只消费 target，密码来源通过 `getPassword()` 隔离；inline 主机信任以规范化 host+port 的非秘密键持久化。
+**Architecture:** 解析器返回 profile/inline 判别联合；共享 resolver 把两种配置转换为统一 `SshConnectionTarget`。renderer 向 TerminalView 提供基于当前 Markdown source 的 target 工厂，TerminalView 每次连接创建临时 target，SessionManager 和 SshSession 消费 target，密码来源通过 `getPassword()` 隔离；inline 主机信任以规范化 host+port 的非秘密键持久化。
 
 **Tech Stack:** TypeScript 5.8、Obsidian Plugin API、CodeMirror 6、ssh2、yaml、Vitest/jsdom、Docker/OpenSSH、esbuild。
 
@@ -372,17 +372,17 @@ Expected: FAIL，因为 UI 仍传 profile/profileId。
 
 - [x] **Step 4: 修改 TerminalView**
 
-`TerminalViewOptions` 使用 `target: SshConnectionTarget`，`TerminalSessionManager.connect` 接收 target；连接按钮调用：
+`TerminalViewOptions` 使用 `createTarget(): SshConnectionTarget`，避免断开后继续持有包含 inline 密码 provider 的 target；`TerminalSessionManager.connect` 接收本次连接创建的 target：
 
 ```ts
-this.options.manager.connect(this.options.instanceId, this.options.target)
+this.options.manager.connect(this.options.instanceId, this.options.createTarget())
 ```
 
 不要把 target 序列化到 status/error。
 
 - [x] **Step 5: 修改 reading/live preview 共享 resolver 路径**
 
-两个 dependencies 均包含 `profiles`、`credentials`、`manager`。parse 后立即调用 resolver，再把 target 传给 mount。`main.ts` 的 renderer dependencies 增加 credentials。
+两个 dependencies 均包含 `profiles`、`credentials`、`manager`。renderer 用当前 source 创建共享 parser/resolver 工厂并传给 mount，使 Connect/Reconnect 每次得到新 target。`main.ts` 的 renderer dependencies 增加 credentials。
 
 - [x] **Step 6: 运行 renderer 测试、全量单测与类型检查**
 

@@ -83,15 +83,16 @@ function mountTerminal() {
     close: vi.fn(async () => undefined)
   };
   const returnFocus = vi.fn();
+  const createTarget = vi.fn(() => target);
   const view = TerminalView.mount(container, {
     instanceId: "block-1",
-    target,
+    createTarget,
     height: 360,
     manager,
     terminalFactory: () => terminal,
     returnFocus
   });
-  return { container, terminal, manager, session, view, returnFocus };
+  return { container, terminal, manager, session, view, returnFocus, createTarget };
 }
 
 describe("TerminalView", () => {
@@ -114,7 +115,7 @@ describe("TerminalView", () => {
     };
     const view = TerminalView.mount(container, {
       instanceId: "theme-block",
-      target,
+      createTarget: () => target,
       height: 360,
       manager
     });
@@ -164,7 +165,7 @@ describe("TerminalView", () => {
   });
 
   it("releases session subscriptions on disconnect before reconnecting", async () => {
-    const { container, manager, session } = mountTerminal();
+    const { container, createTarget, manager, session } = mountTerminal();
     container.querySelector<HTMLButtonElement>("[data-action=connect]")!.click();
     await flushPromises();
 
@@ -175,5 +176,6 @@ describe("TerminalView", () => {
     expect(session.dataDispose).toHaveBeenCalledTimes(1);
     expect(session.stateDispose).toHaveBeenCalledTimes(1);
     expect(manager.connect).toHaveBeenCalledTimes(2);
+    expect(createTarget).toHaveBeenCalledTimes(3);
   });
 });

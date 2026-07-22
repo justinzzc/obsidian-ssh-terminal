@@ -45,13 +45,12 @@ export function registerReadingView(
   plugin.registerMarkdownCodeBlockProcessor("ssh", (source, container, context) => {
     try {
       const block = parseSshBlock(source);
-      const target = resolveSshConnectionTarget(block, dependencies);
 
       // sourcePath 与单调计数器共同标识本次渲染，避免同文档多块共享会话。
       const instanceId = `${context.sourcePath}:reading:${nextInstanceId++}`;
       const terminal = mountTerminal(container, {
         instanceId,
-        target,
+        createTarget: () => resolveSshConnectionTarget(parseSshBlock(source), dependencies),
         height: block.height,
         manager: dependencies.manager
       });
