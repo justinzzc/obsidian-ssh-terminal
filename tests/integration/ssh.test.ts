@@ -1,7 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { connect } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { CredentialStore } from "../../src/profile/CredentialStore";
 import type { HostKeyDecision } from "../../src/profile/HostKeyStore";
 import { Ssh2ClientAdapter } from "../../src/ssh/SshClientAdapter";
 import { SshSession } from "../../src/ssh/SshSession";
@@ -38,12 +37,6 @@ afterAll(() => {
 describe("production SSH adapter", () => {
   it("opens a verified PTY and exchanges terminal data", async () => {
     let trusted: { algorithm: string; fingerprint: string } | undefined;
-    const credentials: CredentialStore = {
-      isAvailable: async () => true,
-      getPassword: async () => password,
-      setPassword: async () => undefined,
-      deletePassword: async () => undefined
-    };
     const hostKeys = {
       check: (_profileId: string, algorithm: string, fingerprint: string): HostKeyDecision => {
         if (!trusted) return { kind: "unknown" };
@@ -56,8 +49,15 @@ describe("production SSH adapter", () => {
       }
     };
     const session = new SshSession({
-      profile: { id: "docker", name: "Docker", host: "127.0.0.1", port, username: "obsidian-test", timeoutMs: 10_000 },
-      credentials,
+      target: {
+        displayName: "Docker",
+        host: "127.0.0.1",
+        port,
+        username: "obsidian-test",
+        timeoutMs: 10_000,
+        hostKeyId: "docker",
+        getPassword: async () => password
+      },
       hostKeys,
       clientFactory: () => new Ssh2ClientAdapter(),
       confirmHostKey: async () => true

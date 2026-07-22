@@ -48,7 +48,7 @@ export default class SshTerminalPlugin extends Plugin {
       confirmHostKey: (prompt) => confirmHostKey(this.app, prompt)
     }));
 
-    const dependencies = { profiles, manager: this.sessionManager };
+    const dependencies = { profiles, credentials, manager: this.sessionManager };
     registerReadingView(this, dependencies);
     this.registerEditorExtension(createLivePreviewExtension({
       ...dependencies,

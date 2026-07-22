@@ -8,6 +8,7 @@ vi.mock("@xterm/xterm", () => ({ Terminal: class {} }));
 vi.mock("@xterm/addon-fit", () => ({ FitAddon: class {} }));
 
 import { createLivePreviewExtension, findSshBlocks } from "../../src/render/livePreview";
+import type { TerminalViewOptions } from "../../src/ui/TerminalView";
 
 const documentText = "before\n```ssh\nprofile: prod\n```\nafter";
 
@@ -27,13 +28,19 @@ describe("findSshBlocks", () => {
 
 describe("createLivePreviewExtension", () => {
   it("mounts outside the cursor and disposes the widget on editor destroy", () => {
-    const mountTerminal = vi.fn(() => ({ dispose: vi.fn() }));
+    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => ({ dispose: vi.fn() }));
     const state = EditorState.create({
       doc: documentText,
       selection: { anchor: documentText.length },
       extensions: [createLivePreviewExtension({
         sourcePath: () => "note.md",
         profiles: { get: () => ({ id: "prod", name: "Prod", host: "host", port: 22, username: "ops", timeoutMs: 15_000 }) },
+        credentials: {
+          isAvailable: async () => true,
+          getPassword: async () => "stored",
+          setPassword: async () => undefined,
+          deletePassword: async () => undefined
+        },
         manager: {} as never,
         mountTerminal
       })]
@@ -45,5 +52,31 @@ describe("createLivePreviewExtension", () => {
     const disposable = mountTerminal.mock.results[0]!.value;
     view.destroy();
     expect(disposable.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("mounts inline blocks with an ephemeral password target", async () => {
+    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => ({ dispose: vi.fn() }));
+    const inlineDocument = "```ssh\nhost: host\nusername: ops\npassword: never-leak-me\n```\nafter";
+    const state = EditorState.create({
+      doc: inlineDocument,
+      selection: { anchor: inlineDocument.length },
+      extensions: [createLivePreviewExtension({
+        sourcePath: () => "note.md",
+        profiles: { get: () => undefined },
+        credentials: {} as never,
+        manager: {} as never,
+        mountTerminal
+      })]
+    });
+    const parent = document.createElement("div");
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+
+    const mountedTarget = mountTerminal.mock.calls[0]?.[1].target;
+    if (!mountedTarget) throw new Error("Expected inline terminal to mount.");
+    expect(mountedTarget).toMatchObject({ host: "host", username: "ops" });
+    expect(await mountedTarget.getPassword()).toBe("never-leak-me");
+    expect(parent.textContent).not.toContain("never-leak-me");
+    view.destroy();
   });
 });

@@ -6,6 +6,7 @@ vi.mock("@xterm/xterm", () => ({ Terminal: class {} }));
 vi.mock("@xterm/addon-fit", () => ({ FitAddon: class {} }));
 
 import { registerReadingView, type ReadingViewPlugin } from "../../src/render/readingView";
+import type { TerminalViewOptions } from "../../src/ui/TerminalView";
 
 describe("registerReadingView", () => {
   it("registers ssh blocks and disposes the mounted terminal", async () => {
@@ -17,9 +18,15 @@ describe("registerReadingView", () => {
       })
     };
     const disposable = { dispose: vi.fn(async () => undefined) };
-    const mountTerminal = vi.fn(() => disposable);
+    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => disposable);
     registerReadingView(plugin, {
       profiles: { get: () => ({ id: "prod", name: "Prod", host: "host", port: 22, username: "ops", timeoutMs: 15_000 }) },
+      credentials: {
+        isAvailable: async () => true,
+        getPassword: async () => "stored",
+        setPassword: async () => undefined,
+        deletePassword: async () => undefined
+      },
       manager: {} as never,
       mountTerminal
     });
@@ -37,6 +44,10 @@ describe("registerReadingView", () => {
     });
 
     expect(mountTerminal).toHaveBeenCalledOnce();
+    expect(mountTerminal.mock.calls[0]?.[1].target).toMatchObject({
+      displayName: "Prod",
+      hostKeyId: "prod"
+    });
     child!.unload();
     expect(disposable.dispose).toHaveBeenCalledOnce();
   });
@@ -48,6 +59,7 @@ describe("registerReadingView", () => {
       registerMarkdownCodeBlockProcessor: (_language, callback) => { processor = callback; }
     }, {
       profiles: { get: () => undefined },
+      credentials: {} as never,
       manager: {} as never,
       mountTerminal
     });
@@ -56,5 +68,36 @@ describe("registerReadingView", () => {
     expect(container.textContent).toContain("cannot be combined");
     expect(container.textContent).not.toContain("unsafe");
     expect(mountTerminal).not.toHaveBeenCalled();
+  });
+
+  it("mounts inline blocks without using stored profiles", async () => {
+    let processor: Parameters<ReadingViewPlugin["registerMarkdownCodeBlockProcessor"]>[1] | undefined;
+    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => ({ dispose: vi.fn() }));
+    const getPassword = vi.fn(async () => "stored");
+    registerReadingView({
+      registerMarkdownCodeBlockProcessor: (_language, callback) => { processor = callback; }
+    }, {
+      profiles: { get: () => undefined },
+      credentials: {
+        isAvailable: async () => false,
+        getPassword,
+        setPassword: async () => undefined,
+        deletePassword: async () => undefined
+      },
+      manager: {} as never,
+      mountTerminal
+    });
+    const container = document.createElement("div");
+    processor!("host: host\nusername: ops\npassword: never-leak-me", container, {
+      sourcePath: "note.md",
+      addChild: vi.fn()
+    });
+
+    const mountedTarget = mountTerminal.mock.calls[0]?.[1].target;
+    if (!mountedTarget) throw new Error("Expected inline terminal to mount.");
+    expect(mountedTarget).toMatchObject({ host: "host", port: 22, username: "ops" });
+    expect(await mountedTarget.getPassword()).toBe("never-leak-me");
+    expect(getPassword).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("never-leak-me");
   });
 });

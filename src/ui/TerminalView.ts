@@ -1,7 +1,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import type { SshProfile } from "../model";
 import type { Disposable } from "../ssh/SshClientAdapter";
+import type { SshConnectionTarget } from "../ssh/SshConnectionTarget";
 import type { ManagedSession } from "../ssh/SessionManager";
 import { ObsidianTerminalThemeSync } from "./ObsidianTerminalThemeSync";
 
@@ -18,7 +18,7 @@ export interface TerminalAdapter {
 }
 
 export interface TerminalSessionManager {
-  connect(instanceId: string, profileId: string): Promise<Pick<ManagedSession, "onData" | "onStateChange">>;
+  connect(instanceId: string, target: SshConnectionTarget): Promise<Pick<ManagedSession, "onData" | "onStateChange">>;
   write(instanceId: string, data: string): void;
   resize(instanceId: string, rows: number, cols: number, height: number, width: number): void;
   close(instanceId: string): Promise<void>;
@@ -26,7 +26,7 @@ export interface TerminalSessionManager {
 
 export interface TerminalViewOptions {
   instanceId: string;
-  profile: SshProfile;
+  target: SshConnectionTarget;
   height: number;
   manager: TerminalSessionManager;
   terminalFactory?: () => TerminalAdapter;
@@ -64,7 +64,7 @@ export class TerminalView {
     toolbar.className = "ssh-terminal__toolbar";
     this.status = document.createElement("span");
     this.status.className = "ssh-terminal__status";
-    this.status.textContent = `${options.profile.username}@${options.profile.host}:${options.profile.port} · Disconnected`;
+    this.status.textContent = `${options.target.displayName} · Disconnected`;
     toolbar.append(this.status);
 
     this.connectButton = createButton("Connect", "connect", () => void this.connect());
@@ -103,7 +103,7 @@ export class TerminalView {
     this.error.hidden = true;
     this.connectButton.disabled = true;
     this.status.textContent = "Connecting…";
-    this.connecting = this.options.manager.connect(this.options.instanceId, this.options.profile.id).then(
+    this.connecting = this.options.manager.connect(this.options.instanceId, this.options.target).then(
       (session) => {
         this.disposables.push(
           session.onData((data) => this.terminal.write(data)),

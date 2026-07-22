@@ -344,7 +344,7 @@ git commit -m "refactor: pass ssh connection targets to sessions"
 - Consumes: `resolveSshConnectionTarget`、`SshConnectionTarget`。
 - Produces: 两种视图对相同 block 生成相同 target/error。
 
-- [ ] **Step 1: 更新 TerminalView 失败测试**
+- [x] **Step 1: 更新 TerminalView 失败测试**
 
 把 options 中的 profile 换为 target，并断言：
 
@@ -354,7 +354,7 @@ expect(manager.connect).toHaveBeenCalledWith("note:reading:1", target);
 
 保留连接、断开、重连、resize、Escape focus 与 dispose 幂等测试。
 
-- [ ] **Step 2: 更新 renderer 失败测试**
+- [x] **Step 2: 更新 renderer 失败测试**
 
 为 reading/live preview 增加 inline source：
 
@@ -364,13 +364,13 @@ const source = "host: server.example.com\nusername: root\npassword: 'never-leak-
 
 断言 mount options 的 target host/port/username 正确、`await target.getPassword()` 返回哨兵、错误 DOM 不包含哨兵；混用模式不 mount terminal。保留 profile block 与 widget 编辑销毁回归测试。
 
-- [ ] **Step 3: 运行三个测试文件确认 Red**
+- [x] **Step 3: 运行三个测试文件确认 Red**
 
 Run: `npm run test:unit -- tests/unit/TerminalView.test.ts tests/unit/readingView.test.ts tests/unit/livePreview.test.ts`
 
 Expected: FAIL，因为 UI 仍传 profile/profileId。
 
-- [ ] **Step 4: 修改 TerminalView**
+- [x] **Step 4: 修改 TerminalView**
 
 `TerminalViewOptions` 使用 `target: SshConnectionTarget`，`TerminalSessionManager.connect` 接收 target；连接按钮调用：
 
@@ -380,17 +380,17 @@ this.options.manager.connect(this.options.instanceId, this.options.target)
 
 不要把 target 序列化到 status/error。
 
-- [ ] **Step 5: 修改 reading/live preview 共享 resolver 路径**
+- [x] **Step 5: 修改 reading/live preview 共享 resolver 路径**
 
 两个 dependencies 均包含 `profiles`、`credentials`、`manager`。parse 后立即调用 resolver，再把 target 传给 mount。`main.ts` 的 renderer dependencies 增加 credentials。
 
-- [ ] **Step 6: 运行 renderer 测试、全量单测与类型检查**
+- [x] **Step 6: 运行 renderer 测试、全量单测与类型检查**
 
 Run: `npm run test:unit -- tests/unit/TerminalView.test.ts tests/unit/readingView.test.ts tests/unit/livePreview.test.ts && npm run check`
 
 Expected: PASS。
 
-- [ ] **Step 7: 提交 Task 4**
+- [x] **Step 7: 提交 Task 4**
 
 ```bash
 git add src/ui/TerminalView.ts src/render/readingView.ts src/render/livePreview.ts src/main.ts tests/unit/TerminalView.test.ts tests/unit/readingView.test.ts tests/unit/livePreview.test.ts

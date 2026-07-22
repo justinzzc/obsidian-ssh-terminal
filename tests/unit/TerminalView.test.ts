@@ -34,6 +34,17 @@ vi.mock("@xterm/addon-fit", () => ({
 }));
 
 import { TerminalView, type TerminalAdapter } from "../../src/ui/TerminalView";
+import type { SshConnectionTarget } from "../../src/ssh/SshConnectionTarget";
+
+const target: SshConnectionTarget = {
+  displayName: "Prod",
+  host: "host",
+  port: 22,
+  username: "ops",
+  timeoutMs: 15_000,
+  hostKeyId: "prod",
+  getPassword: async () => "secret"
+};
 
 function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -70,7 +81,7 @@ function mountTerminal() {
   const returnFocus = vi.fn();
   const view = TerminalView.mount(container, {
     instanceId: "block-1",
-    profile: { id: "prod", name: "Prod", host: "host", port: 22, username: "ops", timeoutMs: 15_000 },
+    target,
     height: 360,
     manager,
     terminalFactory: () => terminal,
@@ -99,14 +110,7 @@ describe("TerminalView", () => {
     };
     const view = TerminalView.mount(container, {
       instanceId: "theme-block",
-      profile: {
-        id: "prod",
-        name: "Prod",
-        host: "host",
-        port: 22,
-        username: "ops",
-        timeoutMs: 15_000
-      },
+      target,
       height: 360,
       manager
     });
@@ -132,6 +136,7 @@ describe("TerminalView", () => {
     connect.click();
     await flushPromises();
     expect(manager.connect).toHaveBeenCalledTimes(1);
+    expect(manager.connect).toHaveBeenCalledWith("block-1", target);
   });
 
   it("clears the terminal and returns focus on Escape", () => {

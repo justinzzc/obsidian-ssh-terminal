@@ -6,7 +6,9 @@ import {
   WidgetType
 } from "@codemirror/view";
 import { parseSshBlock } from "../block/parseSshBlock";
+import { resolveSshConnectionTarget } from "../block/resolveSshConnectionTarget";
 import type { SshProfile } from "../model";
+import type { CredentialStore } from "../profile/CredentialStore";
 import type { SessionManager } from "../ssh/SessionManager";
 import { TerminalView, type TerminalViewOptions } from "../ui/TerminalView";
 
@@ -22,6 +24,7 @@ export interface SshFenceBlock extends DocumentRange {
 export interface LivePreviewDependencies {
   sourcePath(): string;
   profiles: { get(profileId: string): SshProfile | undefined };
+  credentials: CredentialStore;
   manager: SessionManager;
   mountTerminal?: (container: HTMLElement, options: TerminalViewOptions) => { dispose(): void | Promise<void> };
 }
@@ -95,12 +98,11 @@ class SshTerminalWidget extends WidgetType {
     container.className = "ssh-terminal-live-preview";
     try {
       const config = parseSshBlock(this.block.source);
-      const profile = this.dependencies.profiles.get(config.profileId);
-      if (!profile) throw new Error(`SSH profile not found: ${config.profileId}`);
+      const target = resolveSshConnectionTarget(config, this.dependencies);
       const mountTerminal = this.dependencies.mountTerminal ?? TerminalView.mount;
       this.mounted = mountTerminal(container, {
         instanceId: `${this.dependencies.sourcePath()}:live:${this.block.from}:${this.block.to}`,
-        profile,
+        target,
         height: config.height,
         manager: this.dependencies.manager,
         returnFocus: () => view.focus()

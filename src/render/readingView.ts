@@ -1,5 +1,7 @@
 import { parseSshBlock } from "../block/parseSshBlock";
+import { resolveSshConnectionTarget } from "../block/resolveSshConnectionTarget";
 import type { SshProfile } from "../model";
+import type { CredentialStore } from "../profile/CredentialStore";
 import type { SessionManager } from "../ssh/SessionManager";
 import { TerminalView, type TerminalViewOptions } from "../ui/TerminalView";
 
@@ -26,6 +28,7 @@ export interface ReadingViewPlugin {
 
 export interface ReadingViewDependencies {
   profiles: { get(profileId: string): SshProfile | undefined };
+  credentials: CredentialStore;
   manager: SessionManager;
   mountTerminal?: (container: HTMLElement, options: TerminalViewOptions) => { dispose(): void | Promise<void> };
 }
@@ -42,17 +45,13 @@ export function registerReadingView(
   plugin.registerMarkdownCodeBlockProcessor("ssh", (source, container, context) => {
     try {
       const block = parseSshBlock(source);
-      const profile = dependencies.profiles.get(block.profileId);
-      if (!profile) {
-        renderError(container, `SSH profile not found: ${block.profileId}`);
-        return;
-      }
+      const target = resolveSshConnectionTarget(block, dependencies);
 
       // sourcePath 与单调计数器共同标识本次渲染，避免同文档多块共享会话。
       const instanceId = `${context.sourcePath}:reading:${nextInstanceId++}`;
       const terminal = mountTerminal(container, {
         instanceId,
-        profile,
+        target,
         height: block.height,
         manager: dependencies.manager
       });

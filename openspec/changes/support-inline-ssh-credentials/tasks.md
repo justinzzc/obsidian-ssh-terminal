@@ -16,8 +16,8 @@
 
 ## 4. 阅读视图与实时预览
 
-- [ ] 4.1 更新 `TerminalView` 及其测试，使终端按统一连接目标发起连接并在 dispose 时释放会话引用
-- [ ] 4.2 更新阅读视图和实时预览测试与实现，共享 block-to-target 解析逻辑，并覆盖有效 inline block、混用错误、编辑重建和原有 profile block
+- [x] 4.1 更新 `TerminalView` 及其测试，使终端按统一连接目标发起连接并在 dispose 时释放会话引用
+- [x] 4.2 更新阅读视图和实时预览测试与实现，共享 block-to-target 解析逻辑，并覆盖有效 inline block、混用错误、编辑重建和原有 profile block
 
 ## 5. Inline 主机密钥管理
 
