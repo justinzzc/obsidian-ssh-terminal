@@ -1,10 +1,14 @@
 import type { SshSession } from "./SshSession";
-import type { SshConnectionTarget } from "./SshConnectionTarget";
+import {
+  haveSameSshConnection,
+  type SshConnectionTarget
+} from "./SshConnectionTarget";
 
 export type ManagedSession = Pick<SshSession, "connect" | "close" | "write" | "resize" | "onData" | "onStateChange">;
 export type ManagedSessionFactory = (target: SshConnectionTarget) => ManagedSession;
 
 interface SessionEntry {
+  target: SshConnectionTarget;
   session: ManagedSession;
   connecting: Promise<ManagedSession>;
 }
@@ -30,8 +34,21 @@ export class SessionManager {
         throw error;
       }
     );
-    this.entries.set(instanceId, { session, connecting });
+    this.entries.set(instanceId, { target, session, connecting });
     return connecting;
+  }
+
+  async resume(
+    instanceId: string,
+    target: SshConnectionTarget
+  ): Promise<ManagedSession | undefined> {
+    const existing = this.entries.get(instanceId);
+    if (!existing) return undefined;
+    if (!haveSameSshConnection(existing.target, target)) {
+      await this.close(instanceId);
+      return undefined;
+    }
+    return existing.connecting;
   }
 
   write(instanceId: string, data: string): void {

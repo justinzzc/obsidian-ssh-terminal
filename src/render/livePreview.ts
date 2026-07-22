@@ -3,6 +3,7 @@ import {
   Decoration,
   EditorView,
   type DecorationSet,
+  ViewPlugin,
   WidgetType
 } from "@codemirror/view";
 import { parseSshBlock } from "../block/parseSshBlock";
@@ -26,7 +27,9 @@ export interface LivePreviewDependencies {
   profiles: { get(profileId: string): SshProfile | undefined };
   credentials: CredentialStore;
   manager: SessionManager;
-  mountTerminal?: (container: HTMLElement, options: TerminalViewOptions) => { dispose(): void | Promise<void> };
+  mountTerminal?: (container: HTMLElement, options: TerminalViewOptions) => {
+    dispose(options?: { preserveSession?: boolean }): void | Promise<void>;
+  };
 }
 
 /**
@@ -63,25 +66,50 @@ export function findSshBlocks(
 
 /** 创建 Obsidian 实时预览使用的 CodeMirror block widget 扩展。 */
 export function createLivePreviewExtension(dependencies: LivePreviewDependencies): Extension {
-  return StateField.define<DecorationSet>({
-    create: (state) => buildDecorations(state, dependencies),
+  const sessionIdsByView = new WeakMap<EditorView, Set<string>>();
+  const decorations = StateField.define<DecorationSet>({
+    create: (state) => buildDecorations(state, dependencies, sessionIdsByView),
     update: (decorations, transaction) => {
       if (transaction.docChanged || transaction.selection) {
-        return buildDecorations(transaction.state, dependencies);
+        return buildDecorations(transaction.state, dependencies, sessionIdsByView);
       }
       return decorations.map(transaction.changes);
     },
     // block decoration 会改变编辑器垂直布局，因此必须由 StateField 提供。
     provide: (field) => EditorView.decorations.from(field)
   });
+  const lifecycle = ViewPlugin.define((view) => ({
+    update: () => {
+      const activeIds = new Set(
+        findSshBlocks(view.state, []).map((block) => createInstanceId(dependencies, block))
+      );
+      const mountedIds = sessionIdsByView.get(view);
+      if (!mountedIds) return;
+      for (const instanceId of [...mountedIds]) {
+        if (activeIds.has(instanceId)) continue;
+        mountedIds.delete(instanceId);
+        void dependencies.manager.close(instanceId);
+      }
+    },
+    destroy: () => {
+      const mountedIds = sessionIdsByView.get(view);
+      sessionIdsByView.delete(view);
+      if (!mountedIds) return;
+      for (const instanceId of mountedIds) void dependencies.manager.close(instanceId);
+    }
+  }));
+  return [decorations, lifecycle];
 }
 
 class SshTerminalWidget extends WidgetType {
-  private mounted: { dispose(): void | Promise<void> } | undefined;
+  private mounted: {
+    dispose(options?: { preserveSession?: boolean }): void | Promise<void>;
+  } | undefined;
 
   constructor(
     private readonly block: SshFenceBlock,
-    private readonly dependencies: LivePreviewDependencies
+    private readonly dependencies: LivePreviewDependencies,
+    private readonly sessionIdsByView: WeakMap<EditorView, Set<string>>
   ) {
     super();
   }
@@ -99,17 +127,28 @@ class SshTerminalWidget extends WidgetType {
     try {
       const config = parseSshBlock(this.block.source);
       const mountTerminal = this.dependencies.mountTerminal ?? TerminalView.mount;
+      const instanceId = createInstanceId(this.dependencies, this.block);
+      let sessionIds = this.sessionIdsByView.get(view);
+      if (!sessionIds) {
+        sessionIds = new Set();
+        this.sessionIdsByView.set(view, sessionIds);
+      }
+      sessionIds.add(instanceId);
       this.mounted = mountTerminal(container, {
-        instanceId: `${this.dependencies.sourcePath()}:live:${this.block.from}:${this.block.to}`,
+        instanceId,
         createTarget: () => resolveSshConnectionTarget(
           parseSshBlock(this.block.source),
           this.dependencies
         ),
         height: config.height,
         manager: this.dependencies.manager,
-        returnFocus: () => view.focus()
+        returnFocus: () => view.focus(),
+        resumeExistingSession: true
       });
     } catch (error) {
+      const instanceId = createInstanceId(this.dependencies, this.block);
+      this.sessionIdsByView.get(view)?.delete(instanceId);
+      void this.dependencies.manager.close(instanceId);
       container.classList.add("ssh-terminal__error");
       container.textContent = error instanceof Error ? error.message : "Invalid SSH block.";
     }
@@ -117,20 +156,31 @@ class SshTerminalWidget extends WidgetType {
   }
 
   destroy(): void {
-    // CodeMirror 可能因编辑、切换文档或销毁编辑器调用这里，统一释放 SSH 会话。
-    void this.mounted?.dispose();
+    // 编辑和重绘只拆除终端 UI；block 删除或编辑器销毁由 lifecycle 关闭会话。
+    void this.mounted?.dispose({ preserveSession: true });
     this.mounted = undefined;
   }
 }
 
-function buildDecorations(state: EditorState, dependencies: LivePreviewDependencies): DecorationSet {
+function buildDecorations(
+  state: EditorState,
+  dependencies: LivePreviewDependencies,
+  sessionIdsByView: WeakMap<EditorView, Set<string>>
+): DecorationSet {
   const ranges = findSshBlocks(state).map((block) =>
     Decoration.replace({
-      widget: new SshTerminalWidget(block, dependencies),
+      widget: new SshTerminalWidget(block, dependencies, sessionIdsByView),
       block: true
     }).range(block.from, block.to)
   );
   return Decoration.set(ranges, true);
+}
+
+function createInstanceId(
+  dependencies: LivePreviewDependencies,
+  block: SshFenceBlock
+): string {
+  return `${dependencies.sourcePath()}:live:${block.from}`;
 }
 
 function overlaps(left: DocumentRange, right: DocumentRange): boolean {

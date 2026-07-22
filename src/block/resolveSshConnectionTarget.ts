@@ -6,6 +6,7 @@ import {
 import type { CredentialStore } from "../profile/CredentialStore";
 import {
   createInlineHostKeyId,
+  registerSshConnectionSignature,
   type SshConnectionTarget
 } from "../ssh/SshConnectionTarget";
 
@@ -31,7 +32,7 @@ export function resolveSshConnectionTarget(
   }
 
   const password = config.password;
-  return {
+  return registerSshConnectionSignature({
     displayName: `${config.username}@${config.host}:${config.port}`,
     host: config.host,
     port: config.port,
@@ -39,14 +40,14 @@ export function resolveSshConnectionTarget(
     timeoutMs: config.timeoutMs,
     hostKeyId: createInlineHostKeyId(config.host, config.port),
     getPassword: async () => password
-  };
+  }, ["inline", config.host, config.port, config.username, password, config.timeoutMs]);
 }
 
 function resolveProfile(
   profile: SshProfile,
   credentials: CredentialStore
 ): SshConnectionTarget {
-  return {
+  return registerSshConnectionSignature({
     displayName: profile.name,
     host: profile.host,
     port: profile.port,
@@ -54,5 +55,12 @@ function resolveProfile(
     timeoutMs: profile.timeoutMs,
     hostKeyId: profile.id,
     getPassword: () => credentials.getPassword(profile.id)
-  };
+  }, [
+    "profile",
+    profile.id,
+    profile.host,
+    profile.port,
+    profile.username,
+    profile.timeoutMs
+  ]);
 }

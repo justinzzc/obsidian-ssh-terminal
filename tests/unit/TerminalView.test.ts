@@ -50,7 +50,10 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function mountTerminal() {
+function mountTerminal(options: {
+  resumeExistingSession?: boolean;
+  resumeSession?: boolean;
+} = {}) {
   const container = document.createElement("div");
   document.body.append(container);
   const dataHandlers = new Set<(data: string) => void>();
@@ -78,6 +81,7 @@ function mountTerminal() {
   session.onStateChange.mockReturnValue({ dispose: session.stateDispose });
   const manager = {
     connect: vi.fn(async () => session),
+    resume: vi.fn(async () => options.resumeSession ? session : undefined),
     write: vi.fn(),
     resize: vi.fn(),
     close: vi.fn(async () => undefined)
@@ -90,7 +94,10 @@ function mountTerminal() {
     height: 360,
     manager,
     terminalFactory: () => terminal,
-    returnFocus
+    returnFocus,
+    ...(options.resumeExistingSession === undefined
+      ? {}
+      : { resumeExistingSession: options.resumeExistingSession })
   });
   return { container, terminal, manager, session, view, returnFocus, createTarget };
 }
@@ -200,6 +207,25 @@ describe("TerminalView", () => {
     await Promise.all([view.dispose(), view.dispose()]);
     expect(manager.close).toHaveBeenCalledTimes(1);
     expect(terminal.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("reattaches a preserved session without starting a new connection", async () => {
+    const { container, terminal, manager, session, view } = mountTerminal({
+      resumeExistingSession: true,
+      resumeSession: true
+    });
+    await flushPromises();
+
+    expect(manager.resume).toHaveBeenCalledWith("block-1", target);
+    expect(manager.connect).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLButtonElement>("[data-action=connect]")!.textContent)
+      .toBe("Disconnect");
+
+    await view.dispose({ preserveSession: true });
+    expect(manager.close).not.toHaveBeenCalled();
+    expect(session.dataDispose).toHaveBeenCalledOnce();
+    expect(session.stateDispose).toHaveBeenCalledOnce();
+    expect(terminal.dispose).toHaveBeenCalledOnce();
   });
 
   it("releases session subscriptions on disconnect before reconnecting", async () => {

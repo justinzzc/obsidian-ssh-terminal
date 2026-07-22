@@ -19,6 +19,7 @@ export interface TerminalAdapter {
 
 export interface TerminalSessionManager {
   connect(instanceId: string, target: SshConnectionTarget): Promise<Pick<ManagedSession, "onData" | "onStateChange">>;
+  resume?(instanceId: string, target: SshConnectionTarget): Promise<Pick<ManagedSession, "onData" | "onStateChange"> | undefined>;
   write(instanceId: string, data: string): void;
   resize(instanceId: string, rows: number, cols: number, height: number, width: number): void;
   close(instanceId: string): Promise<void>;
@@ -31,6 +32,11 @@ export interface TerminalViewOptions {
   manager: TerminalSessionManager;
   terminalFactory?: () => TerminalAdapter;
   returnFocus?: () => void;
+  resumeExistingSession?: boolean;
+}
+
+export interface TerminalViewDisposeOptions {
+  preserveSession?: boolean;
 }
 
 /** 阅读视图和实时预览共用的终端 DOM 组件。 */
@@ -90,12 +96,42 @@ export class TerminalView {
     // xterm 输入只交给当前渲染实例；未连接时 SessionManager 会安全忽略。
     this.disposables.push(this.terminal.onData((data) => options.manager.write(options.instanceId, data)));
     this.installResizeObserver(terminalContainer);
+    if (options.resumeExistingSession) void this.resumeExistingSession();
   }
 
-  dispose(): Promise<void> {
+  dispose(options: TerminalViewDisposeOptions = {}): Promise<void> {
     // 缓存清理 Promise，防止 CodeMirror 销毁和文档关闭同时重复释放资源。
-    this.disposePromise ??= this.performDispose();
+    this.disposePromise ??= this.performDispose(options.preserveSession === true);
     return this.disposePromise;
+  }
+
+  private resumeExistingSession(): Promise<void> {
+    const resume = this.options.manager.resume;
+    if (!resume || this.connecting || this.disposed) return Promise.resolve();
+    let target: SshConnectionTarget;
+    try {
+      target = this.options.createTarget();
+    } catch (error) {
+      this.showError(error);
+      return Promise.resolve();
+    }
+    this.connectButton.disabled = true;
+    this.connectButton.textContent = "Connecting…";
+    this.connecting = resume.call(
+      this.options.manager,
+      this.options.instanceId,
+      target
+    ).then(
+      (session) => {
+        if (this.disposed) return;
+        if (session) this.attachSession(session);
+        else this.showDisconnected();
+      },
+      (error: unknown) => this.showError(error)
+    ).finally(() => {
+      this.connecting = undefined;
+    });
+    return this.connecting;
   }
 
   private toggleConnection(): Promise<void> {
@@ -118,17 +154,7 @@ export class TerminalView {
     this.connecting = this.options.manager.connect(this.options.instanceId, target).then(
       (session) => {
         if (this.disposed) return;
-        this.clearSessionDisposables();
-        this.sessionDisposables.push(
-          session.onData((data) => this.terminal.write(data)),
-          session.onStateChange((state) => {
-            if (state === "connected") this.showConnected();
-            if (state === "closed" || state === "failed") this.showDisconnected();
-          })
-        );
-        this.showConnected();
-        this.terminal.focus();
-        this.fit();
+        this.attachSession(session);
       },
       (error: unknown) => {
         this.showError(error);
@@ -149,14 +175,14 @@ export class TerminalView {
     this.showDisconnected();
   }
 
-  private async performDispose(): Promise<void> {
+  private async performDispose(preserveSession: boolean): Promise<void> {
     this.disposed = true;
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
     this.clearSessionDisposables();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
     try {
-      await this.options.manager.close(this.options.instanceId);
+      if (!preserveSession) await this.options.manager.close(this.options.instanceId);
     } finally {
       this.terminal.dispose();
       this.root.remove();
@@ -165,6 +191,22 @@ export class TerminalView {
 
   private clearSessionDisposables(): void {
     for (const disposable of this.sessionDisposables.splice(0)) disposable.dispose();
+  }
+
+  private attachSession(
+    session: Pick<ManagedSession, "onData" | "onStateChange">
+  ): void {
+    this.clearSessionDisposables();
+    this.sessionDisposables.push(
+      session.onData((data) => this.terminal.write(data)),
+      session.onStateChange((state) => {
+        if (state === "connected") this.showConnected();
+        if (state === "closed" || state === "failed") this.showDisconnected();
+      })
+    );
+    this.showConnected();
+    this.terminal.focus();
+    this.fit();
   }
 
   private showConnected(): void {
@@ -201,6 +243,7 @@ export class TerminalView {
     const message = error instanceof Error ? error.message : "SSH connection failed.";
     this.error.textContent = message;
     this.error.hidden = false;
+    this.connected = false;
     this.connectButton.textContent = "Connect";
     this.connectButton.disabled = false;
   }

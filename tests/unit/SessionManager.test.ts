@@ -49,4 +49,16 @@ describe("SessionManager", () => {
     await Promise.all([manager.close("block-1"), manager.close("block-1")]);
     expect(session.close).toHaveBeenCalledTimes(1);
   });
+
+  it("resumes the existing session only for the same connection target", async () => {
+    const { manager, sessionFactory, session, target } = createManager();
+    await manager.connect("block-1", target);
+
+    await expect(manager.resume("block-1", target)).resolves.toBe(session);
+    expect(sessionFactory).toHaveBeenCalledTimes(1);
+    expect(session.close).not.toHaveBeenCalled();
+
+    await expect(manager.resume("block-1", { ...target, host: "other-host" })).resolves.toBeUndefined();
+    expect(session.close).toHaveBeenCalledOnce();
+  });
 });

@@ -8,6 +8,33 @@ export interface SshConnectionTarget {
   getPassword(): Promise<string | null>;
 }
 
+type ConnectionSignature = readonly (string | number)[];
+
+const connectionSignatures = new WeakMap<SshConnectionTarget, ConnectionSignature>();
+
+/** 记录仅用于当前进程内会话复用判断的连接字段；不会进入日志或持久化数据。 */
+export function registerSshConnectionSignature(
+  target: SshConnectionTarget,
+  signature: ConnectionSignature
+): SshConnectionTarget {
+  connectionSignatures.set(target, signature);
+  return target;
+}
+
+/** 比较两个运行时目标是否代表同一条 SSH 连接，展示参数不参与判断。 */
+export function haveSameSshConnection(
+  left: SshConnectionTarget,
+  right: SshConnectionTarget
+): boolean {
+  if (left === right) return true;
+  const leftSignature = connectionSignatures.get(left);
+  const rightSignature = connectionSignatures.get(right);
+  return leftSignature !== undefined &&
+    rightSignature !== undefined &&
+    leftSignature.length === rightSignature.length &&
+    leftSignature.every((value, index) => value === rightSignature[index]);
+}
+
 const INLINE_PREFIX = "inline:v1:";
 
 /** 为 inline endpoint 生成不含用户名和密码的稳定主机信任键。 */

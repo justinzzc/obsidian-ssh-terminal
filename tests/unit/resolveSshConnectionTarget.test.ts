@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { resolveSshConnectionTarget } from "../../src/block/resolveSshConnectionTarget";
 import type { CredentialStore } from "../../src/profile/CredentialStore";
 import {
+  haveSameSshConnection,
   createInlineHostKeyId,
   parseInlineHostKeyId
 } from "../../src/ssh/SshConnectionTarget";
@@ -16,6 +17,32 @@ function createCredentials(): CredentialStore {
 }
 
 describe("resolveSshConnectionTarget", () => {
+  it("treats height as display-only but detects inline connection changes", () => {
+    const dependencies = {
+      profiles: { get: () => undefined },
+      credentials: createCredentials()
+    };
+    const base = {
+      mode: "inline" as const,
+      host: "host",
+      port: 22,
+      username: "ops",
+      password: "secret",
+      timeoutMs: 15_000
+    };
+
+    const first = resolveSshConnectionTarget({ ...base, height: 360 }, dependencies);
+    const resized = resolveSshConnectionTarget({ ...base, height: 640 }, dependencies);
+    const changedPassword = resolveSshConnectionTarget({
+      ...base,
+      password: "changed",
+      height: 640
+    }, dependencies);
+
+    expect(haveSameSshConnection(first, resized)).toBe(true);
+    expect(haveSameSshConnection(first, changedPassword)).toBe(false);
+  });
+
   it("resolves inline config without touching the credential store", async () => {
     const credentials = createCredentials();
     const target = resolveSshConnectionTarget({

@@ -41,7 +41,7 @@ describe("createLivePreviewExtension", () => {
           setPassword: async () => undefined,
           deletePassword: async () => undefined
         },
-        manager: {} as never,
+        manager: { close: vi.fn(async () => undefined) } as never,
         mountTerminal
       })]
     });
@@ -64,7 +64,7 @@ describe("createLivePreviewExtension", () => {
         sourcePath: () => "note.md",
         profiles: { get: () => undefined },
         credentials: {} as never,
-        manager: {} as never,
+        manager: { close: vi.fn(async () => undefined) } as never,
         mountTerminal
       })]
     });
@@ -78,5 +78,47 @@ describe("createLivePreviewExtension", () => {
     expect(await mountedTarget.getPassword()).toBe("never-leak-me");
     expect(parent.textContent).not.toContain("never-leak-me");
     view.destroy();
+  });
+
+  it("preserves a connected session through block editing and height changes", () => {
+    const disposables: ReturnType<typeof vi.fn>[] = [];
+    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => {
+      const dispose = vi.fn();
+      disposables.push(dispose);
+      return { dispose };
+    });
+    const manager = { close: vi.fn(async () => undefined) };
+    const state = EditorState.create({
+      doc: documentText,
+      selection: { anchor: documentText.length },
+      extensions: [createLivePreviewExtension({
+        sourcePath: () => "note.md",
+        profiles: { get: () => ({ id: "prod", name: "Prod", host: "host", port: 22, username: "ops", timeoutMs: 15_000 }) },
+        credentials: {} as never,
+        manager: manager as never,
+        mountTerminal
+      })]
+    });
+    const parent = document.createElement("div");
+    document.body.append(parent);
+    const view = new EditorView({ state, parent });
+    const firstOptions = mountTerminal.mock.calls[0]![1];
+
+    view.dispatch({ selection: { anchor: 16 } });
+    expect(disposables[0]!).toHaveBeenCalledWith({ preserveSession: true });
+
+    const closingFence = documentText.lastIndexOf("\n```") + 1;
+    view.dispatch({
+      changes: { from: closingFence, insert: "height: 640\n" },
+      selection: { anchor: 0 }
+    });
+    const secondOptions = mountTerminal.mock.calls[1]![1];
+
+    expect(secondOptions.instanceId).toBe(firstOptions.instanceId);
+    expect(secondOptions.resumeExistingSession).toBe(true);
+    expect(manager.close).not.toHaveBeenCalled();
+
+    view.destroy();
+    expect(manager.close).toHaveBeenCalledWith(firstOptions.instanceId);
   });
 });
