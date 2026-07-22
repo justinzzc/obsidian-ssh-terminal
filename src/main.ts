@@ -1,5 +1,7 @@
-import { Notice, Platform, Plugin } from "obsidian";
-import { KeytarCredentialStore } from "./profile/CredentialStore";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+import { FileSystemAdapter, Notice, Platform, Plugin } from "obsidian";
+import { createKeytarLoader, KeytarCredentialStore } from "./profile/CredentialStore";
 import { HostKeyStore } from "./profile/HostKeyStore";
 import { PluginDataRepository, ProfileStore } from "./profile/ProfileStore";
 import { createLivePreviewExtension } from "./render/livePreview";
@@ -26,7 +28,16 @@ export default class SshTerminalPlugin extends Plugin {
       save: (data) => this.saveData(data)
     });
     const profiles = new ProfileStore(repository);
-    const credentials = new KeytarCredentialStore();
+    const adapter = this.app.vault.adapter;
+    const pluginDirectory = this.manifest.dir;
+    if (!(adapter instanceof FileSystemAdapter) || !pluginDirectory) {
+      throw new Error("无法确定 SSH Terminal 插件目录，系统钥匙串无法初始化。");
+    }
+    // 用插件 main.js 创建专用 require，使 keytar 从当前插件的 node_modules 解析。
+    const pluginMainPath = join(adapter.getBasePath(), pluginDirectory, "main.js");
+    const credentials = new KeytarCredentialStore(
+      createKeytarLoader(createRequire, pluginMainPath)
+    );
     const hostKeys = new HostKeyStore(repository);
 
     // 每个渲染块创建独立 SshSession，但共享 profile、凭据与主机信任存储。

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  createKeytarLoader,
   KeytarCredentialStore,
   loadKeytarWithRequire
 } from "../../src/profile/CredentialStore";
@@ -15,6 +16,26 @@ describe("KeytarCredentialStore", () => {
 
     expect(loadKeytarWithRequire(requireModule)).toBe(api);
     expect(requireModule).toHaveBeenCalledWith("keytar");
+  });
+
+  it("resolves keytar relative to the plugin main file", async () => {
+    const api = {
+      getPassword: vi.fn(async () => null),
+      setPassword: vi.fn(async () => undefined),
+      deletePassword: vi.fn(async () => true)
+    };
+    const pluginRequire = vi.fn(() => api);
+    const createRequire = vi.fn(() => pluginRequire);
+    const loader = createKeytarLoader(
+      createRequire,
+      "C:\\vault\\.obsidian\\plugins\\obsidian-ssh\\main.js"
+    );
+
+    expect(await loader()).toBe(api);
+    expect(createRequire).toHaveBeenCalledWith(
+      "C:\\vault\\.obsidian\\plugins\\obsidian-ssh\\main.js"
+    );
+    expect(pluginRequire).toHaveBeenCalledWith("keytar");
   });
 
   it("uses a fixed service name and the profile id as account", async () => {

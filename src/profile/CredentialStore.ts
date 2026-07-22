@@ -17,6 +17,7 @@ export interface KeytarApi {
 }
 
 export type KeytarLoader = () => Promise<KeytarApi>;
+export type CreateRequire = (filename: string) => (moduleId: string) => unknown;
 
 export class KeytarCredentialStore implements CredentialStore {
   private apiPromise?: Promise<KeytarApi | null>;
@@ -68,4 +69,16 @@ export function loadKeytarWithRequire(
 ): KeytarApi {
   const imported = requireModule("keytar") as KeytarApi | { default: KeytarApi };
   return "default" in imported ? imported.default : imported;
+}
+
+/**
+ * 创建以插件 main.js 为解析基准的加载器。
+ * Obsidian 暴露的全局 require 以 Electron 内部脚本为基准，无法找到插件自己的 node_modules。
+ */
+export function createKeytarLoader(
+  createRequire: CreateRequire,
+  pluginMainPath: string
+): KeytarLoader {
+  const pluginRequire = createRequire(pluginMainPath);
+  return async () => loadKeytarWithRequire(pluginRequire);
 }
