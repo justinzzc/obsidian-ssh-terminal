@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 
 vi.mock("../../src/settings/obsidianApi", () => import("../mocks/obsidian"));
 
 import { SshSettingsTab } from "../../src/settings/SshSettingsTab";
+
+const styles = readFileSync("src/styles.css", "utf8");
 
 beforeAll(() => {
   HTMLElement.prototype.empty = function (this: HTMLElement) { this.replaceChildren(); };
@@ -165,6 +168,14 @@ describe("SshSettingsTab", () => {
 
     expect(document.body.textContent).toContain("\u65b0\u589e SSH \u8fde\u63a5");
     expect(document.querySelector<HTMLInputElement>("[data-profile-field=id]")?.value).toBe("");
+  });
+
+  it("lets Profile row buttons grow with multi-line content", () => {
+    const rowRule = styles.match(/\.ssh-settings-profile-row\s*\{(?<body>[^}]*)\}/)?.groups?.body ?? "";
+
+    expect(rowRule).toContain("height: auto");
+    expect(rowRule).toContain("min-height: 0");
+    expect(rowRule).toContain("box-shadow: none");
   });
 
   it("shows inline host trust and forgets it after confirmation", async () => {
