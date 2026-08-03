@@ -43,6 +43,8 @@ export class ProfileModal extends Modal {
     this.values.password = "";
     this.titleEl.setText(this.existing ? "编辑 SSH 连接" : "新增 SSH 连接");
     this.contentEl.empty();
+    const errorEl = this.contentEl.createDiv({ cls: "ssh-profile-modal-error" });
+    errorEl.hidden = true;
 
     addTextSetting(this.contentEl, "id", "Profile ID", "例如 production-server；保存后不可修改", this.values.id, (value) => this.values.id = value, Boolean(this.existing));
     addTextSetting(this.contentEl, "name", "显示名称", "用于设置页展示", this.values.name, (value) => this.values.name = value);
@@ -52,16 +54,30 @@ export class ProfileModal extends Modal {
     addTextSetting(this.contentEl, "timeoutMs", "超时（毫秒）", "1000 到 120000", this.values.timeoutMs, (value) => this.values.timeoutMs = value);
     addTextSetting(this.contentEl, "password", "密码", this.existing ? "留空表示保留已保存密码" : "保存到系统钥匙串", "", (value) => this.values.password = value, false, true);
 
+    if (this.existing) {
+      const dangerActions = new Setting(this.contentEl);
+      if (this.hasHostKey) {
+        dangerActions.addButton((button) => button
+          .setButtonText("忘记主机指纹")
+          .onClick(() => this.forgetHostKey(errorEl)));
+      }
+      dangerActions.addButton((button) => button
+        .setButtonText("删除连接")
+        .setWarning()
+        .onClick(() => this.deleteProfile(errorEl)));
+    }
+
     new Setting(this.contentEl)
       .addButton((button) => button.setButtonText("取消").onClick(() => this.close()))
-      .addButton((button) => button.setButtonText("保存").setCta().onClick(() => this.save()));
+      .addButton((button) => button.setButtonText("保存").setCta().onClick(() => this.save(errorEl)));
   }
 
   onClose(): void {
     this.contentEl.empty();
   }
 
-  private async save(): Promise<void> {
+  private async save(errorEl: HTMLElement): Promise<void> {
+    clearError(errorEl);
     try {
       await this.actions.save({
         id: this.values.id.trim(),
@@ -75,9 +91,43 @@ export class ProfileModal extends Modal {
       this.close();
       this.actions.onChanged();
     } catch (error) {
-      new Notice(error instanceof Error ? error.message : "SSH 配置保存失败");
+      showError(errorEl, error, "SSH 配置保存失败");
     }
   }
+
+  private async forgetHostKey(errorEl: HTMLElement): Promise<void> {
+    if (!this.existing) return;
+    clearError(errorEl);
+    try {
+      await this.actions.forgetHostKey(this.existing.id);
+      new Notice("已忘记主机指纹，下次连接将重新确认");
+    } catch (error) {
+      showError(errorEl, error, "忘记主机指纹失败");
+    }
+  }
+
+  private async deleteProfile(errorEl: HTMLElement): Promise<void> {
+    if (!this.existing) return;
+    if (!window.confirm(`确定删除 SSH 配置“${this.existing.name}”吗？`)) return;
+    clearError(errorEl);
+    try {
+      await this.actions.delete(this.existing.id);
+      this.close();
+      this.actions.onChanged();
+    } catch (error) {
+      showError(errorEl, error, "SSH 配置删除失败");
+    }
+  }
+}
+
+function clearError(errorEl: HTMLElement): void {
+  errorEl.hidden = true;
+  errorEl.textContent = "";
+}
+
+function showError(errorEl: HTMLElement, error: unknown, fallback: string): void {
+  errorEl.textContent = error instanceof Error ? error.message : fallback;
+  errorEl.hidden = false;
 }
 
 function addTextSetting(

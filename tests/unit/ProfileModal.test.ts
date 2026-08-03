@@ -142,4 +142,61 @@ describe("ProfileModal", () => {
 
     await vi.waitFor(() => expect(save).toHaveBeenCalledWith(existing, ""));
   });
+
+  it("keeps the modal open and displays a save error without losing input", async () => {
+    const save = vi.fn(async () => { throw new Error("SSH profile contains invalid fields."); });
+    const modal = new ProfileModal({} as never, undefined, false, actions({ save }));
+    modal.open();
+    change("host", "still-here.example.com");
+
+    button("保存").click();
+
+    await vi.waitFor(() => expect(document.body.textContent)
+      .toContain("SSH profile contains invalid fields."));
+    expect(input("host").value).toBe("still-here.example.com");
+    expect(document.querySelector(".modal")).not.toBeNull();
+  });
+
+  it("forgets a trusted host key without closing the edit modal", async () => {
+    const forgetHostKey = vi.fn(async () => undefined);
+    const modal = new ProfileModal(
+      {} as never,
+      existing,
+      true,
+      actions({ forgetHostKey })
+    );
+    modal.open();
+
+    button("忘记主机指纹").click();
+
+    await vi.waitFor(() => expect(forgetHostKey).toHaveBeenCalledWith("production-server"));
+    expect(document.querySelector(".modal")).not.toBeNull();
+  });
+
+  it("confirms deletion, closes, and refreshes after success", async () => {
+    const deleteProfile = vi.fn(async () => undefined);
+    const onChanged = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const modal = new ProfileModal(
+      {} as never,
+      existing,
+      false,
+      actions({ delete: deleteProfile, onChanged })
+    );
+    modal.open();
+
+    button("删除连接").click();
+
+    await vi.waitFor(() => expect(deleteProfile).toHaveBeenCalledWith("production-server"));
+    expect(onChanged).toHaveBeenCalledOnce();
+    expect(document.querySelector(".modal")).toBeNull();
+  });
+
+  it("does not render existing-only actions while creating a Profile", () => {
+    const modal = new ProfileModal({} as never, undefined, false, actions());
+    modal.open();
+
+    expect(document.body.textContent).not.toContain("忘记主机指纹");
+    expect(document.body.textContent).not.toContain("删除连接");
+  });
 });
