@@ -1,9 +1,42 @@
 export class App {}
 export class Plugin {}
-export class Notice {}
+export class Notice {
+  constructor(readonly message: unknown) {}
+}
+
+export class Modal {
+  readonly modalEl = document.createElement("div");
+  readonly titleEl = document.createElement("h2");
+  readonly contentEl = document.createElement("div");
+  private opened = false;
+
+  constructor(readonly app: App) {
+    this.modalEl.className = "modal";
+    this.modalEl.append(this.titleEl, this.contentEl);
+  }
+
+  open(): void {
+    if (this.opened) return;
+    this.opened = true;
+    document.body.append(this.modalEl);
+    this.onOpen();
+  }
+
+  close(): void {
+    if (!this.opened) return;
+    this.opened = false;
+    this.onClose();
+    this.modalEl.remove();
+  }
+
+  onOpen(): void {}
+  onClose(): void {}
+}
 
 export class PluginSettingTab {
   containerEl = document.createElement("div");
+
+  constructor(readonly app: App, readonly plugin: Plugin) {}
 }
 
 export class Setting {
@@ -47,16 +80,17 @@ class MockTextComponent {
     return this;
   }
 
-  onChange(_handler: (value: string) => void): this {
+  onChange(handler: (value: string) => void): this {
+    this.inputEl.addEventListener("input", () => handler(this.inputEl.value));
     return this;
   }
 }
 
 class MockButtonComponent {
-  constructor(private readonly element: HTMLButtonElement) {}
+  constructor(readonly buttonEl: HTMLButtonElement) {}
 
   setButtonText(text: string): this {
-    this.element.textContent = text;
+    this.buttonEl.textContent = text;
     return this;
   }
 
@@ -64,7 +98,7 @@ class MockButtonComponent {
   setWarning(): this { return this; }
 
   onClick(handler: () => void | Promise<void>): this {
-    this.element.addEventListener("click", () => void handler());
+    this.buttonEl.addEventListener("click", () => void handler());
     return this;
   }
 }
