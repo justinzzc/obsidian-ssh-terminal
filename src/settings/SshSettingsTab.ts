@@ -48,32 +48,25 @@ export class SshSettingsTab extends PluginSettingTab {
   }
 
   private renderProfileRow(container: HTMLElement, profile: SshProfile): void {
-    const row = container.createDiv({ cls: "ssh-settings-profile-row" });
-    row.tabIndex = 0;
-    row.setAttribute("role", "button");
+    const item = container.createDiv({ cls: "ssh-settings-profile-item" });
+    const row = item.createEl("button", { cls: "ssh-settings-profile-row" });
+    row.setAttribute("type", "button");
     row.setAttribute("aria-label", `查看或编辑 ${profile.name}`);
 
-    const details = row.createDiv({ cls: "ssh-settings-profile-details" });
-    details.createDiv({ cls: "ssh-settings-profile-name", text: profile.name });
-    details.createDiv({
+    const details = row.createEl("span", { cls: "ssh-settings-profile-details" });
+    details.createEl("span", { cls: "ssh-settings-profile-name", text: profile.name });
+    details.createEl("span", {
       cls: "ssh-settings-profile-endpoint",
       text: `${profile.username}@${profile.host}:${profile.port}`
     });
-    details.createDiv({ cls: "ssh-settings-profile-id", text: profile.id });
+    details.createEl("span", { cls: "ssh-settings-profile-id", text: profile.id });
 
-    const editButton = row.createEl("button", {
+    const editButton = item.createEl("button", {
       text: "查看/编辑"
     });
-    editButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      this.openProfileModal(profile);
-    });
+    editButton.setAttribute("type", "button");
+    editButton.addEventListener("click", () => this.openProfileModal(profile));
     row.addEventListener("click", () => this.openProfileModal(profile));
-    row.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      this.openProfileModal(profile);
-    });
   }
 
   private openProfileModal(profile?: SshProfile): void {

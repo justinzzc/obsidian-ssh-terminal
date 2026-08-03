@@ -61,7 +61,7 @@
   margin-top: 0.75rem;
 }
 
-.ssh-settings-profile-row {
+.ssh-settings-profile-item {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -69,12 +69,32 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
   background: var(--background-primary-alt);
-  cursor: pointer;
 }
 
-.ssh-settings-profile-row:hover,
-.ssh-settings-profile-row:focus-visible {
+.ssh-settings-profile-item:hover,
+.ssh-settings-profile-item:focus-within {
   border-color: var(--interactive-accent);
+}
+
+.ssh-settings-profile-row {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.ssh-settings-profile-row:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.ssh-settings-profile-item:focus-within {
   outline: none;
 }
 
@@ -84,12 +104,14 @@
 }
 
 .ssh-settings-profile-name {
+  display: block;
   font-weight: var(--font-semibold);
   color: var(--text-normal);
 }
 
 .ssh-settings-profile-endpoint,
 .ssh-settings-profile-id {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -123,12 +145,12 @@
 }
 
 @media (max-width: 500px) {
-  .ssh-settings-profile-row {
+  .ssh-settings-profile-item {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .ssh-settings-profile-row > button {
+  .ssh-settings-profile-item > button:last-child {
     align-self: flex-end;
   }
 }

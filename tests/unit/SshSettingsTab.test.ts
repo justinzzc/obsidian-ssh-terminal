@@ -61,6 +61,24 @@ function makeTab(profiles = [profile]) {
   );
 }
 
+function profileRow(tab: SshSettingsTab): HTMLElement {
+  const row = tab.containerEl.querySelector<HTMLElement>(".ssh-settings-profile-row");
+  if (!row) throw new Error("Missing Profile row");
+  return row;
+}
+
+function editButton(tab: SshSettingsTab): HTMLButtonElement {
+  const button = [...tab.containerEl.querySelectorAll<HTMLButtonElement>("button")]
+    .find((candidate) => candidate.textContent === "\u67e5\u770b/\u7f16\u8f91");
+  if (!button) throw new Error("Missing edit button");
+  return button;
+}
+
+function activateWithKeyboard(element: HTMLElement, key: "Enter" | " "): void {
+  element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  element.click();
+}
+
 describe("SshSettingsTab", () => {
   it("renders Profiles as compact rows instead of expanded forms", () => {
     const tab = makeTab();
@@ -90,13 +108,47 @@ describe("SshSettingsTab", () => {
     const tab = makeTab();
     tab.display();
 
-    const editButton = [...tab.containerEl.querySelectorAll<HTMLButtonElement>("button")]
-      .find((candidate) => candidate.textContent === "\u67e5\u770b/\u7f16\u8f91");
-    editButton!.click();
+    editButton(tab).click();
 
     expect(document.body.textContent).toContain("\u7f16\u8f91 SSH \u8fde\u63a5");
     expect(document.querySelector<HTMLInputElement>("[data-profile-field=id]")?.value)
       .toBe("production-server");
+    expect(document.querySelectorAll(".modal")).toHaveLength(1);
+  });
+
+  it("opens exactly one modal when the Profile row is clicked", () => {
+    const tab = makeTab();
+    tab.display();
+
+    profileRow(tab).click();
+
+    expect(document.querySelectorAll(".modal")).toHaveLength(1);
+  });
+
+  it("opens exactly one modal when Enter activates the Profile row", () => {
+    const tab = makeTab();
+    tab.display();
+
+    activateWithKeyboard(profileRow(tab), "Enter");
+
+    expect(document.querySelectorAll(".modal")).toHaveLength(1);
+  });
+
+  it("opens exactly one modal when Space activates the Profile row", () => {
+    const tab = makeTab();
+    tab.display();
+
+    activateWithKeyboard(profileRow(tab), " ");
+
+    expect(document.querySelectorAll(".modal")).toHaveLength(1);
+  });
+
+  it("opens exactly one modal when the edit button is keyboard-activated", () => {
+    const tab = makeTab();
+    tab.display();
+
+    activateWithKeyboard(editButton(tab), "Enter");
+
     expect(document.querySelectorAll(".modal")).toHaveLength(1);
   });
 
