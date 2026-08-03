@@ -4,5 +4,6 @@ main.js
 /styles.css
 release/
 coverage/
+.worktrees/
 
 .obsidian-*/
