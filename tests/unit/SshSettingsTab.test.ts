@@ -85,7 +85,10 @@ describe("SshSettingsTab", () => {
 
     tab.display();
 
-    expect(tab.containerEl.querySelectorAll(".ssh-settings-profile-row")).toHaveLength(1);
+    const row = profileRow(tab);
+    expect(row.tagName).toBe("BUTTON");
+    expect(row.getAttribute("type")).toBe("button");
+    expect(editButton(tab).getAttribute("type")).toBe("button");
     expect(tab.containerEl.textContent).toContain("Production");
     expect(tab.containerEl.textContent).toContain("deploy@server.example.com:2222");
     expect(tab.containerEl.textContent).toContain("production-server");
