@@ -1,6 +1,6 @@
 workflow: hotfix
 language: zh-CN
-phase: build
+phase: archive
 context_compression: off
 build_mode: direct
 build_pause: null
@@ -13,14 +13,14 @@ auto_transition: true
 base_ref: 41e5c8882d99f54f7a3d8f5aa2abaaf4ae9baf5a
 design_doc: null
 plan: null
-verify_result: fail
-verify_failures: 1
+verify_result: pass
+verify_failures: 0
 verification_report: docs/superpowers/reports/2026-07-22-fix-terminal-controls-and-escape-focus-verify.md
 branch_status: pending
 created_at: 2026-07-22
-verified_at: null
-archive_confirmation: null
-archived: false
+verified_at: 2026-08-03
+archive_confirmation: confirmed
+archived: true
 direct_override: null
 handoff_context: null
 handoff_hash: null
