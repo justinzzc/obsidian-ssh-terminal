@@ -41,3 +41,94 @@
   padding: 0.4rem;
   font-family: var(--font-monospace);
 }
+
+.ssh-settings-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.ssh-settings-profile-header h3 {
+  margin: 0;
+}
+
+.ssh-settings-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.ssh-settings-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary-alt);
+  cursor: pointer;
+}
+
+.ssh-settings-profile-row:hover,
+.ssh-settings-profile-row:focus-visible {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.ssh-settings-profile-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.ssh-settings-profile-name {
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.ssh-settings-profile-endpoint,
+.ssh-settings-profile-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ssh-settings-profile-endpoint {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.ssh-settings-profile-id {
+  margin-top: 0.15rem;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.ssh-settings-profile-empty {
+  padding: 1rem;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ssh-profile-modal-error {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-s);
+  color: var(--text-error);
+  background: var(--background-modifier-error);
+}
+
+@media (max-width: 500px) {
+  .ssh-settings-profile-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ssh-settings-profile-row > button {
+    align-self: flex-end;
+  }
+}
