@@ -122,4 +122,24 @@ describe("ProfileModal", () => {
     expect(onChanged).toHaveBeenCalledOnce();
     expect(document.querySelector(".modal")).toBeNull();
   });
+
+  it("does not reuse a password typed before closing and reopening", async () => {
+    const save = vi.fn(async () => undefined);
+    const modal = new ProfileModal(
+      {} as never,
+      existing,
+      true,
+      actions({ save })
+    );
+    modal.open();
+
+    change("password", "discarded-password");
+    button("取消").click();
+    modal.open();
+
+    expect(input("password").value).toBe("");
+    button("保存").click();
+
+    await vi.waitFor(() => expect(save).toHaveBeenCalledWith(existing, ""));
+  });
 });

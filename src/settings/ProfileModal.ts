@@ -40,6 +40,7 @@ export class ProfileModal extends Modal {
   }
 
   onOpen(): void {
+    this.values.password = "";
     this.titleEl.setText(this.existing ? "编辑 SSH 连接" : "新增 SSH 连接");
     this.contentEl.empty();
 
