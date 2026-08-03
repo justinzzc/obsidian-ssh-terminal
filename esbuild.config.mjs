@@ -12,7 +12,7 @@ await esbuild.build({
   entryPoints: [entryPoint],
   bundle: true,
   // ssh2 的原生加速模块是可选依赖；运行时加载失败会自动回退纯 JavaScript。
-  external: ["obsidian", "electron", "keytar", "cpu-features", "*.node"],
+  external: ["obsidian", "electron", "cpu-features", "*.node"],
   format: "cjs",
   target: "es2022",
   platform: "node",

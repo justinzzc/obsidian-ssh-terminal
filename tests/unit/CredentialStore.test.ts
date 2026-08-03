@@ -1,63 +1,61 @@
 import { describe, expect, it, vi } from "vitest";
+import { SafeStorageCredentialStore } from "../../src/profile/CredentialStore";
 import {
-  createKeytarLoader,
-  KeytarCredentialStore,
-  loadKeytarWithRequire
-} from "../../src/profile/CredentialStore";
+  PluginDataRepository,
+  type PluginDataPersistence
+} from "../../src/profile/ProfileStore";
 
-describe("KeytarCredentialStore", () => {
-  it("loads the native module through CommonJS require for Obsidian", () => {
-    const api = {
-      getPassword: vi.fn(async () => null),
-      setPassword: vi.fn(async () => undefined),
-      deletePassword: vi.fn(async () => true)
+function createPersistence(): PluginDataPersistence & { saved: unknown[] } {
+  const saved: unknown[] = [];
+  return {
+    saved,
+    load: vi.fn(async () => null),
+    save: vi.fn(async (data) => {
+      saved.push(structuredClone(data));
+    })
+  };
+}
+
+describe("SafeStorageCredentialStore", () => {
+  it("stores only encrypted password blobs in plugin data", async () => {
+    const persistence = createPersistence();
+    const repository = await PluginDataRepository.load(persistence);
+    const safeStorage = {
+      isEncryptionAvailable: vi.fn(() => true),
+      encryptString: vi.fn((value: string) => Buffer.from(`encrypted:${value}`, "utf8")),
+      decryptString: vi.fn((value: Buffer) => value.toString("utf8").replace("encrypted:", ""))
     };
-    const requireModule = vi.fn(() => api);
-
-    expect(loadKeytarWithRequire(requireModule)).toBe(api);
-    expect(requireModule).toHaveBeenCalledWith("keytar");
-  });
-
-  it("resolves keytar relative to the plugin main file", async () => {
-    const api = {
-      getPassword: vi.fn(async () => null),
-      setPassword: vi.fn(async () => undefined),
-      deletePassword: vi.fn(async () => true)
-    };
-    const pluginRequire = vi.fn(() => api);
-    const createRequire = vi.fn(() => pluginRequire);
-    const loader = createKeytarLoader(
-      createRequire,
-      "C:\\vault\\.obsidian\\plugins\\obsidian-ssh\\main.js"
-    );
-
-    expect(await loader()).toBe(api);
-    expect(createRequire).toHaveBeenCalledWith(
-      "C:\\vault\\.obsidian\\plugins\\obsidian-ssh\\main.js"
-    );
-    expect(pluginRequire).toHaveBeenCalledWith("keytar");
-  });
-
-  it("uses a fixed service name and the profile id as account", async () => {
-    const api = {
-      getPassword: vi.fn(async () => "secret"),
-      setPassword: vi.fn(async () => undefined),
-      deletePassword: vi.fn(async () => true)
-    };
-    const store = new KeytarCredentialStore(async () => api);
+    const store = new SafeStorageCredentialStore(repository, safeStorage);
 
     await store.setPassword("prod", "secret");
-    expect(await store.getPassword("prod")).toBe("secret");
-    await store.deletePassword("prod");
 
-    expect(api.setPassword).toHaveBeenCalledWith("obsidian-ssh-terminal", "prod", "secret");
-    expect(api.getPassword).toHaveBeenCalledWith("obsidian-ssh-terminal", "prod");
-    expect(api.deletePassword).toHaveBeenCalledWith("obsidian-ssh-terminal", "prod");
+    expect(await store.getPassword("prod")).toBe("secret");
+    expect(JSON.stringify(persistence.saved)).not.toContain("secret");
+    expect(JSON.stringify(persistence.saved)).toContain(Buffer.from("encrypted:secret").toString("base64"));
   });
 
-  it("fails securely when keytar cannot load", async () => {
-    const store = new KeytarCredentialStore(async () => {
-      throw new Error("native module unavailable");
+  it("deletes encrypted password blobs from plugin data", async () => {
+    const persistence = createPersistence();
+    const repository = await PluginDataRepository.load(persistence);
+    const store = new SafeStorageCredentialStore(repository, {
+      isEncryptionAvailable: () => true,
+      encryptString: (value) => Buffer.from(value, "utf8"),
+      decryptString: (value) => value.toString("utf8")
+    });
+
+    await store.setPassword("prod", "secret");
+    await store.deletePassword("prod");
+
+    expect(await store.getPassword("prod")).toBeNull();
+    expect(JSON.stringify(repository.snapshot())).not.toContain("prod");
+  });
+
+  it("fails securely when Electron safeStorage encryption is unavailable", async () => {
+    const repository = await PluginDataRepository.load(createPersistence());
+    const store = new SafeStorageCredentialStore(repository, {
+      isEncryptionAvailable: () => false,
+      encryptString: () => Buffer.from("unused"),
+      decryptString: () => "unused"
     });
 
     expect(await store.isAvailable()).toBe(false);

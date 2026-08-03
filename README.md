@@ -39,7 +39,7 @@ inline 连接同样执行严格的主机指纹确认。已信任的 inline 主�
 
 ## 安全说明
 
-- profile 模式不会把密码写入 Markdown 或插件 `data.json`；密码通过 `keytar` 写入 Windows Credential Manager、macOS Keychain 或 Linux Secret Service。
+- profile 模式不会把密码写入 Markdown 明文；密码通过 Electron `safeStorage` 使用操作系统加密能力加密后，以密文写入插件 `data.json`。
 - inline 模式会把密码直接保存在 Markdown 中，但不会复制到系统钥匙串、插件 `data.json` 或主机指纹记录。
 - 系统钥匙串不可用时，插件拒绝保存密码，不会降级为明文。
 - 首次连接采用 TOFU；已确认的主机指纹发生变化时，连接会被阻止。
@@ -56,7 +56,7 @@ npm run build
 npm run package:release
 ```
 
-发布目录位于 `release/<platform>-<arch>/`。将其中内容复制到 Vault 的 `.obsidian/plugins/ssh-terminal/`，然后在 Obsidian 中启用插件。原生 `keytar` 文件必须与运行 Obsidian 的操作系统和 CPU 架构一致。
+发布目录位于 `release/community/`，其中包含 Obsidian 社区插件发布需要的 `main.js`、`manifest.json` 和 `styles.css`。将其中内容复制到 Vault 的 `.obsidian/plugins/ssh-terminal/`，然后在 Obsidian 中启用插件。
 
 ## 集成测试
 

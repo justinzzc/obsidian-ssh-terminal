@@ -72,4 +72,5 @@ export interface PersistedPluginData {
   schemaVersion: 1;
   profiles: SshProfile[];
   hostKeys: Record<string, TrustedHostKey>;
+  encryptedCredentials?: Record<string, string>;
 }
