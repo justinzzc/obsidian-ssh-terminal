@@ -21,7 +21,7 @@ export class SshSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new Setting(containerEl)
-      .setName("SSH Terminal 连接配置")
+      .setName("连接配置")
       .setDesc("profile 模式的密码只保存到操作系统钥匙串；inline 模式会写入 Markdown 明文。")
       .setHeading();
 
