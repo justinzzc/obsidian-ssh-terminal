@@ -1,5 +1,6 @@
 import { Notice, Platform, Plugin } from "obsidian";
-import { SafeStorageCredentialStore, type SafeStorageApi } from "./profile/CredentialStore";
+import { safeStorage } from "electron";
+import { SafeStorageCredentialStore } from "./profile/CredentialStore";
 import { HostKeyStore } from "./profile/HostKeyStore";
 import { PluginDataRepository, ProfileStore } from "./profile/ProfileStore";
 import { createLivePreviewExtension } from "./render/livePreview";
@@ -26,7 +27,6 @@ export default class SshTerminalPlugin extends Plugin {
       save: (data) => this.saveData(data)
     });
     const profiles = new ProfileStore(repository);
-    const { safeStorage } = require("electron") as { safeStorage: SafeStorageApi };
     const credentials = new SafeStorageCredentialStore(repository, safeStorage);
     const hostKeys = new HostKeyStore(repository);
 

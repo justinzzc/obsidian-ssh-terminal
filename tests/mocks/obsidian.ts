@@ -57,6 +57,11 @@ export class Setting {
     return this;
   }
 
+  setHeading(): this {
+    this.element.dataset.settingHeading = "true";
+    return this;
+  }
+
   addText(callback: (text: MockTextComponent) => void): this {
     const inputEl = document.createElement("input");
     this.element.append(inputEl);

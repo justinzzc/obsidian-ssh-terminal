@@ -20,18 +20,19 @@ export class SshSettingsTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "SSH Terminal 连接配置" });
-    containerEl.createEl("p", {
-      text: "profile 模式的密码只保存到操作系统钥匙串；inline 模式会写入 Markdown 明文。"
-    });
+    new Setting(containerEl)
+      .setName("SSH Terminal 连接配置")
+      .setDesc("profile 模式的密码只保存到操作系统钥匙串；inline 模式会写入 Markdown 明文。")
+      .setHeading();
 
     const header = containerEl.createDiv({ cls: "ssh-settings-profile-header" });
-    header.createEl("h3", { text: "Profiles" });
-    const addButton = header.createEl("button", {
-      text: "新增连接",
-      cls: "mod-cta"
-    });
-    addButton.addEventListener("click", () => this.openProfileModal());
+    new Setting(header)
+      .setName("Profiles")
+      .setHeading()
+      .addButton((button) => button
+        .setButtonText("新增连接")
+        .setCta()
+        .onClick(() => this.openProfileModal()));
 
     const list = containerEl.createDiv({ cls: "ssh-settings-profile-list" });
     const profiles = this.profiles.list();
@@ -87,10 +88,10 @@ export class SshSettingsTab extends PluginSettingTab {
     const trustedHosts = this.hostKeys.listInline();
     if (trustedHosts.length === 0) return;
 
-    container.createEl("h2", { text: "Inline SSH 主机信任" });
-    container.createEl("p", {
-      text: "以下主机指纹来自 Markdown 中的 inline SSH 连接；忘记后，下次连接需要重新确认。"
-    });
+    new Setting(container)
+      .setName("Inline SSH 主机信任")
+      .setDesc("以下主机指纹来自 Markdown 中的 inline SSH 连接；忘记后，下次连接需要重新确认。")
+      .setHeading();
     for (const trusted of trustedHosts) {
       new Setting(container)
         .setName(`${trusted.host}:${trusted.port}`)

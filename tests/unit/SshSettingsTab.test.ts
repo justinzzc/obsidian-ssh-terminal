@@ -99,6 +99,16 @@ describe("SshSettingsTab", () => {
     expect(tab.containerEl.querySelectorAll("input")).toHaveLength(0);
   });
 
+  it("uses Obsidian Setting headings instead of direct heading elements", () => {
+    const tab = makeTab();
+
+    tab.display();
+
+    expect(tab.containerEl.querySelectorAll("h1, h2, h3, h4, h5, h6")).toHaveLength(0);
+    expect(tab.containerEl.textContent).toContain("SSH Terminal 连接配置");
+    expect(tab.containerEl.textContent).toContain("Profiles");
+  });
+
   it("shows one add button and an empty state when there are no Profiles", () => {
     const tab = makeTab([]);
 
