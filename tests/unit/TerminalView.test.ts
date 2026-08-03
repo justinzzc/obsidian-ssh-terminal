@@ -185,8 +185,10 @@ describe("TerminalView", () => {
     expect(terminal.clear).toHaveBeenCalledOnce();
   });
 
-  it("leaves Escape to the terminal without returning focus", () => {
+  it("keeps Escape inside the terminal without canceling it", () => {
     const { container, terminal, returnFocus } = mountTerminal();
+    const outerKeyDown = vi.fn();
+    container.addEventListener("keydown", outerKeyDown);
     const event = new KeyboardEvent("keydown", {
       key: "Escape",
       bubbles: true,
@@ -198,6 +200,7 @@ describe("TerminalView", () => {
     expect(event.defaultPrevented).toBe(false);
     expect(returnFocus).not.toHaveBeenCalled();
     expect(terminal.focus).not.toHaveBeenCalled();
+    expect(outerKeyDown).not.toHaveBeenCalled();
   });
 
   it("closes the session and terminal exactly once when disposed", async () => {

@@ -95,6 +95,7 @@ export class TerminalView {
 
     // xterm 输入只交给当前渲染实例；未连接时 SessionManager 会安全忽略。
     this.disposables.push(this.terminal.onData((data) => options.manager.write(options.instanceId, data)));
+    this.root.addEventListener("keydown", this.onKeyDown);
     this.installResizeObserver(terminalContainer);
     if (options.resumeExistingSession) void this.resumeExistingSession();
   }
@@ -179,6 +180,7 @@ export class TerminalView {
     this.disposed = true;
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
+    this.root.removeEventListener("keydown", this.onKeyDown);
     this.clearSessionDisposables();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
     try {
@@ -192,6 +194,10 @@ export class TerminalView {
   private clearSessionDisposables(): void {
     for (const disposable of this.sessionDisposables.splice(0)) disposable.dispose();
   }
+
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") event.stopPropagation();
+  };
 
   private attachSession(
     session: Pick<ManagedSession, "onData" | "onStateChange">

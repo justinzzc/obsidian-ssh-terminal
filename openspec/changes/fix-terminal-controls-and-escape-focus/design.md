@@ -12,7 +12,7 @@
 
 会话状态回调仅更新按钮，不修改主机标签。断开后清理会话订阅并恢复 `Connect`。删除 Reconnect 方法与按钮；用户需要重连时通过同一按钮先断开再连接。
 
-删除终端根节点的 Escape 键监听器及其注册/注销逻辑。Escape 由 xterm 和终端内程序原样处理；`returnFocus` 选项暂不扩大修改范围，可保留为兼容字段，但终端不再因 Escape 调用它。
+终端根节点只拦截 Escape 的冒泡：不调用 `preventDefault`，确保 xterm/Vim 仍收到按键；调用 `stopPropagation`，阻止 Obsidian/CodeMirror 把同一个 Escape 解释为退出 block；不调用 `returnFocus`。监听器随终端视图销毁而注销。
 
 实时预览使用不含 block 结束位置的稳定实例标识。widget 因进入编辑模式或内容重绘而销毁时，仅释放 xterm 和事件订阅，暂时保留 `SessionManager` 中的 SSH 会话；返回预览后通过 `resume` 尝试重新挂接。编辑器销毁、block 删除或配置无效时仍关闭对应会话，避免泄漏。
 
