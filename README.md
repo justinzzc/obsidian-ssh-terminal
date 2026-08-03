@@ -2,6 +2,10 @@
 
 在 Obsidian 桌面版文档中嵌入完整交互式 SSH 终端。插件支持阅读视图与实时预览，连接必须由用户手动发起。
 
+## Preview
+
+![SSH Terminal preview](docs/terminal.png)
+
 ## 使用方法
 
 SSH block 支持两种互斥模式。需要保护密码时，推荐使用 profile + 系统钥匙串：
