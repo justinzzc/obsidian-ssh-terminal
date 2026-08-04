@@ -7,3 +7,7 @@ coverage/
 .worktrees/
 
 .obsidian-*/
+
+.agent/
+.agents/
+.codex/
