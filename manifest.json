@@ -1,7 +1,7 @@
 {
   "id": "ssh-terminal",
   "name": "SSH Terminal",
-  "version": "3.0.1",
+  "version": "0.3.1",
   "minAppVersion": "1.8.7",
   "description": "Interactive SSH terminals embedded in Markdown documents.",
   "author": "zhouzechen",
