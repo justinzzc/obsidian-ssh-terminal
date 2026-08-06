@@ -3,7 +3,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 // @ts-ignore release.mjs is an executable Node script with named testable exports.
-import { buildReleaseCommands, parseReleaseArgs, resolveReleaseVersion, updateReleaseVersionFiles, validateSemver } from "../../scripts/release.mjs";
+import { buildReleaseCommands, parseReleaseArgs, resolveBin, resolveReleaseVersion, updateReleaseVersionFiles, validateSemver } from "../../scripts/release.mjs";
 
 interface ReleaseCommand {
   bin: string;
@@ -23,6 +23,13 @@ describe("release script", () => {
     expect(resolveReleaseVersion("patch", "0.2.3")).toBe("0.2.4");
     expect(resolveReleaseVersion("0.3.0", "0.2.3")).toBe("0.3.0");
     expect(parseReleaseArgs(["minor"], "0.2.3").version).toBe("0.3.0");
+  });
+
+  it("resolves Windows command shims used by spawnSync without a shell", () => {
+    expect(resolveBin("npm", "win32")).toBe("npm.cmd");
+    expect(resolveBin("npx", "win32")).toBe("npx.cmd");
+    expect(resolveBin("git", "win32")).toBe("git");
+    expect(resolveBin("npm", "linux")).toBe("npm");
   });
 
   it("builds a normal release plan without force operations", () => {

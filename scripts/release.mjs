@@ -191,8 +191,10 @@ function run(item) {
   }
 }
 
-function resolveBin(bin) {
-  if (bin !== "gh" || process.platform !== "win32") return bin;
+export function resolveBin(bin, platform = process.platform) {
+  if (platform !== "win32") return bin;
+  if (bin === "npm" || bin === "npx") return `${bin}.cmd`;
+  if (bin !== "gh") return bin;
   return "C:\\Program Files\\GitHub CLI\\gh.exe";
 }
 
