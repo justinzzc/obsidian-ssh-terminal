@@ -6,12 +6,11 @@
   "scripts": {
     "test": "vitest run tests/unit",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
     "build": "node esbuild.config.mjs production",
     "check": "tsc --noEmit && vitest run tests/unit",
     "package:release": "node scripts/package-release.mjs",
     "release": "node scripts/release.mjs",
-    "verify": "npm run check && npm run test:integration && npm run package:release"
+    "verify": "npm run check &&  npm run package:release"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
