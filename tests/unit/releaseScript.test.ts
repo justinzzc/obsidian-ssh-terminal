@@ -3,7 +3,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 // @ts-ignore release.mjs is an executable Node script with named testable exports.
-import { buildReleaseCommands, parseReleaseArgs, resolveBin, resolveReleaseVersion, updateReleaseVersionFiles, validateSemver } from "../../scripts/release.mjs";
+import { buildReleaseCommands, parseReleaseArgs, resolveBin, resolveReleaseVersion, shouldRunWithShell, updateReleaseVersionFiles, validateSemver } from "../../scripts/release.mjs";
 
 interface ReleaseCommand {
   bin: string;
@@ -25,11 +25,15 @@ describe("release script", () => {
     expect(parseReleaseArgs(["minor"], "0.2.3").version).toBe("0.3.0");
   });
 
-  it("resolves Windows command shims used by spawnSync without a shell", () => {
-    expect(resolveBin("npm", "win32")).toBe("npm.cmd");
-    expect(resolveBin("npx", "win32")).toBe("npx.cmd");
+  it("runs Windows npm command shims through a shell", () => {
+    expect(resolveBin("npm", "win32")).toBe("npm");
+    expect(resolveBin("npx", "win32")).toBe("npx");
     expect(resolveBin("git", "win32")).toBe("git");
     expect(resolveBin("npm", "linux")).toBe("npm");
+    expect(shouldRunWithShell("npm", "win32")).toBe(true);
+    expect(shouldRunWithShell("npx", "win32")).toBe(true);
+    expect(shouldRunWithShell("gh", "win32")).toBe(false);
+    expect(shouldRunWithShell("npm", "linux")).toBe(false);
   });
 
   it("builds a normal release plan without force operations", () => {

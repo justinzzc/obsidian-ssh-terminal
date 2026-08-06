@@ -183,7 +183,7 @@ function run(item) {
     cwd: root,
     encoding: "utf8",
     stdio: "inherit",
-    shell: false
+    shell: shouldRunWithShell(item.bin)
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
@@ -193,9 +193,12 @@ function run(item) {
 
 export function resolveBin(bin, platform = process.platform) {
   if (platform !== "win32") return bin;
-  if (bin === "npm" || bin === "npx") return `${bin}.cmd`;
   if (bin !== "gh") return bin;
   return "C:\\Program Files\\GitHub CLI\\gh.exe";
+}
+
+export function shouldRunWithShell(bin, platform = process.platform) {
+  return platform === "win32" && (bin === "npm" || bin === "npx");
 }
 
 function usage() {
