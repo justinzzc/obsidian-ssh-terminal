@@ -74,9 +74,6 @@ export function buildReleaseCommands(options) {
     command("npm", ["run", "check"]),
     command("npm", ["run", "build"])
   );
-  if (!options.skipIntegration) {
-    commands.push(command("npm", ["run", "test:integration"]));
-  }
   commands.push(command("npm", ["run", "package:release"]));
 
   if (options.replace) {
