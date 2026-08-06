@@ -64,18 +64,16 @@ export function buildReleaseCommands(options) {
   const commands = [
     command("git", ["status", "--short"]),
     command("release-version-files", [options.version]),
+    command("git", ["diff", "--check"]),
+    command("git", ["add", "manifest.json", "versions.json", "package.json", "package-lock.json"]),
+    command("git", ["commit", "-m", `chore: release ${options.version}`]),
     command("npm", ["run", "check"]),
     command("npm", ["run", "build"])
   ];
   if (!options.skipIntegration) {
     commands.push(command("npm", ["run", "test:integration"]));
   }
-  commands.push(
-    command("npm", ["run", "package:release"]),
-    command("git", ["diff", "--check"]),
-    command("git", ["add", "manifest.json", "versions.json", "package.json", "package-lock.json"]),
-    command("git", ["commit", "-m", `chore: release ${options.version}`])
-  );
+  commands.push(command("npm", ["run", "package:release"]));
 
   if (options.replace) {
     commands.push(

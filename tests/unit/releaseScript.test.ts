@@ -35,6 +35,14 @@ describe("release script", () => {
     expect(commands).toContain("release create 0.3.0 release/community/main.js release/community/manifest.json release/community/styles.css --title 0.3.0 --notes Release notes");
     expect(commands.join("\n")).not.toContain("--force");
     expect(commands.join("\n")).not.toContain("--clobber");
+
+    const versionIndex = commands.indexOf("0.3.0");
+    const commitIndex = commands.indexOf("commit -m chore: release 0.3.0");
+    expect(versionIndex).toBeLessThan(commitIndex);
+    expect(commitIndex).toBeLessThan(commands.indexOf("run check"));
+    expect(commitIndex).toBeLessThan(commands.indexOf("run build"));
+    expect(commitIndex).toBeLessThan(commands.indexOf("run package:release"));
+    expect(commitIndex).toBeLessThan(commands.indexOf("tag 0.3.0"));
   });
 
   it("builds a replace release plan with explicit force and clobber operations", () => {
