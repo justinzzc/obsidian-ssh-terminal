@@ -61,15 +61,19 @@ export function parseReleaseArgs(argv, currentVersion = readCurrentPackageVersio
 }
 
 export function buildReleaseCommands(options) {
-  const commands = [
-    command("git", ["status", "--short"]),
-    command("release-version-files", [options.version]),
-    command("git", ["diff", "--check"]),
-    command("git", ["add", "manifest.json", "versions.json", "package.json", "package-lock.json"]),
-    command("git", ["commit", "-m", `chore: release ${options.version}`]),
+  const commands = [command("git", ["status", "--short"])];
+  if (!options.versionCommitted) {
+    commands.push(
+      command("release-version-files", [options.version]),
+      command("git", ["diff", "--check"]),
+      command("git", ["add", "manifest.json", "versions.json", "package.json", "package-lock.json"]),
+      command("git", ["commit", "-m", `chore: release ${options.version}`])
+    );
+  }
+  commands.push(
     command("npm", ["run", "check"]),
     command("npm", ["run", "build"])
-  ];
+  );
   if (!options.skipIntegration) {
     commands.push(command("npm", ["run", "test:integration"]));
   }
@@ -98,8 +102,9 @@ async function main(argv) {
   assertCleanWorktree();
   assertGhAuthenticated();
   assertVersionDoesNotExist(options);
+  options.versionCommitted = isCurrentReleaseVersionCommit(options.version);
 
-  await updateReleaseVersionFiles(options.version);
+  if (!options.versionCommitted) await updateReleaseVersionFiles(options.version);
 
   const commands = buildReleaseCommands(options)
     .filter((item) => !(item.bin === "git" && item.args.join(" ") === "status --short"))
@@ -155,6 +160,18 @@ function assertVersionDoesNotExist(options) {
   if (options.replace) return;
   const localTag = execFileSync("git", ["tag", "--list", options.version], { cwd: root, encoding: "utf8" }).trim();
   if (localTag) throw new Error(`Local tag already exists: ${options.version}. Use --replace to update it.`);
+}
+
+function isCurrentReleaseVersionCommit(version) {
+  const packageJson = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+  const manifest = JSON.parse(readFileSync(path.join(root, "manifest.json"), "utf8"));
+  const packageLock = JSON.parse(readFileSync(path.join(root, "package-lock.json"), "utf8"));
+  const commitSubject = execFileSync("git", ["log", "-1", "--pretty=%s"], { cwd: root, encoding: "utf8" }).trim();
+  return packageJson.version === version &&
+    manifest.version === version &&
+    packageLock.version === version &&
+    packageLock.packages?.[""]?.version === version &&
+    commitSubject === `chore: release ${version}`;
 }
 
 function command(bin, args) {

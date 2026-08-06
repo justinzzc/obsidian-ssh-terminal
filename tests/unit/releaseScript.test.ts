@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { buildReleaseCommands, parseReleaseArgs, resolveReleaseVersion, updateReleaseVersionFiles, validateSemver } from "../../scripts/release.mjs";
 
 interface ReleaseCommand {
+  bin: string;
   args: string[];
 }
 
@@ -53,6 +54,20 @@ describe("release script", () => {
     expect(commands).toContain("tag -f 0.3.0");
     expect(commands).toContain("push origin 0.3.0 --force");
     expect(commands).toContain("release upload 0.3.0 release/community/main.js release/community/manifest.json release/community/styles.css --clobber");
+  });
+
+  it("resumes after an existing release version commit", () => {
+    const options = { ...parseReleaseArgs(["0.3.0"]), versionCommitted: true };
+    const plan = buildReleaseCommands(options);
+    const commands = plan.map((command: ReleaseCommand) => command.args.join(" "));
+
+    expect(plan.map((command: ReleaseCommand) => command.bin)).not.toContain("release-version-files");
+    expect(commands).not.toContain("commit -m chore: release 0.3.0");
+    expect(commands).toContain("run check");
+    expect(commands).toContain("run build");
+    expect(commands).toContain("run package:release");
+    expect(commands).toContain("tag 0.3.0");
+    expect(commands).toContain("push origin master 0.3.0");
   });
 
   it("updates package, manifest, and Obsidian version map together", async () => {
