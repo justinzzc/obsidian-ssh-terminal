@@ -82,10 +82,11 @@ Copy those files into `<vault>/.obsidian/plugins/ssh-terminal/` for manual insta
 
 ## Release
 
-Use the release script to update versions, run verification, build release assets, push the tag, and create the GitHub release:
+Use the release script to update `package.json`, `package-lock.json`, `manifest.json`, and `versions.json`, run verification, build release assets, push the tag, and create the GitHub release. The version argument can be an explicit `x.y.z` version or one of `major`, `minor`, or `patch`:
 
 ```powershell
 npm run release -- 0.3.0 --notes "Release 0.3.0"
+npm run release -- minor --notes "Release next minor version"
 ```
 
 If a release needs to be rebuilt after an Obsidian review fix, replace the existing tag and assets explicitly:

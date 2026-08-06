@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -17,14 +18,24 @@ export function validateSemver(version) {
   return version;
 }
 
-export function parseReleaseArgs(argv) {
-  const [version, ...rest] = argv;
-  if (!version || version === "--help" || version === "-h") {
+export function resolveReleaseVersion(value, currentVersion) {
+  if (!["major", "minor", "patch"].includes(value)) return validateSemver(value);
+
+  const [major, minor, patch] = validateSemver(currentVersion).split(".").map(Number);
+  if (value === "major") return `${major + 1}.0.0`;
+  if (value === "minor") return `${major}.${minor + 1}.0`;
+  return `${major}.${minor}.${patch + 1}`;
+}
+
+export function parseReleaseArgs(argv, currentVersion = readCurrentPackageVersion()) {
+  const [versionArg, ...rest] = argv;
+  if (!versionArg || versionArg === "--help" || versionArg === "-h") {
     throw new Error(usage());
   }
+  const version = resolveReleaseVersion(versionArg, currentVersion);
 
   const options = {
-    version: validateSemver(version),
+    version,
     notes: `Release ${version}.`,
     replace: false,
     skipIntegration: false
@@ -52,7 +63,7 @@ export function parseReleaseArgs(argv) {
 export function buildReleaseCommands(options) {
   const commands = [
     command("git", ["status", "--short"]),
-    command("npm", ["version", options.version, "--no-git-tag-version"]),
+    command("release-version-files", [options.version]),
     command("npm", ["run", "check"]),
     command("npm", ["run", "build"])
   ];
@@ -90,27 +101,41 @@ async function main(argv) {
   assertGhAuthenticated();
   assertVersionDoesNotExist(options);
 
-  run(command("npm", ["version", options.version, "--no-git-tag-version"]));
-  await updateObsidianVersionFiles(options.version);
+  await updateReleaseVersionFiles(options.version);
 
   const commands = buildReleaseCommands(options)
     .filter((item) => !(item.bin === "git" && item.args.join(" ") === "status --short"))
-    .filter((item) => !(item.bin === "npm" && item.args[0] === "version"));
+    .filter((item) => item.bin !== "release-version-files");
 
   for (const item of commands) run(item);
 }
 
-async function updateObsidianVersionFiles(version) {
-  const manifestPath = path.join(root, "manifest.json");
-  const versionsPath = path.join(root, "versions.json");
+export async function updateReleaseVersionFiles(version, baseDir = root) {
+  const packagePath = path.join(baseDir, "package.json");
+  const packageLockPath = path.join(baseDir, "package-lock.json");
+  const manifestPath = path.join(baseDir, "manifest.json");
+  const versionsPath = path.join(baseDir, "versions.json");
+  const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
+  const packageLock = JSON.parse(await readFile(packageLockPath, "utf8"));
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const versions = JSON.parse(await readFile(versionsPath, "utf8"));
 
+  packageJson.version = version;
+  packageLock.version = version;
+  if (packageLock.packages?.[""]) packageLock.packages[""].version = version;
   manifest.version = version;
   versions[version] = manifest.minAppVersion;
 
+  await writeJson(packagePath, packageJson);
+  await writeJson(packageLockPath, packageLock);
   await writeJson(manifestPath, manifest);
   await writeJson(versionsPath, versions);
+}
+
+function readCurrentPackageVersion() {
+  const packagePath = path.join(root, "package.json");
+  const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+  return packageJson.version;
 }
 
 async function writeJson(filePath, value) {
@@ -158,10 +183,11 @@ function resolveBin(bin) {
 
 function usage() {
   return [
-    "Usage: node scripts/release.mjs <x.y.z> [--notes <text>] [--replace] [--skip-integration]",
+    "Usage: node scripts/release.mjs <x.y.z|major|minor|patch> [--notes <text>] [--replace] [--skip-integration]",
     "",
     "Examples:",
     "  node scripts/release.mjs 0.3.0 --notes \"Release 0.3.0\"",
+    "  node scripts/release.mjs minor --notes \"Release next minor version\"",
     "  node scripts/release.mjs 0.3.0 --replace --skip-integration"
   ].join("\n");
 }

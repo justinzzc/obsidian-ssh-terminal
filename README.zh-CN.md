@@ -82,10 +82,11 @@ npm run package:release
 
 ## 发版
 
-使用发布脚本更新版本、执行验证、构建发布产物、推送 tag，并创建 GitHub release：
+使用发布脚本更新 `package.json`、`package-lock.json`、`manifest.json`、`versions.json`，执行验证、构建发布产物、推送 tag，并创建 GitHub release。版本参数可以是明确的 `x.y.z` 版本号，也可以是 `major`、`minor`、`patch`：
 
 ```powershell
 npm run release -- 0.3.0 --notes "Release 0.3.0"
+npm run release -- minor --notes "Release next minor version"
 ```
 
 如果 Obsidian 审核反馈后需要重建同一个版本，显式替换已有 tag 和 release assets：
