@@ -10,6 +10,7 @@
     "build": "node esbuild.config.mjs production",
     "check": "tsc --noEmit && vitest run tests/unit",
     "package:release": "node scripts/package-release.mjs",
+    "release": "node scripts/release.mjs",
     "verify": "npm run check && npm run test:integration && npm run package:release"
   },
   "dependencies": {

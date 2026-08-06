@@ -80,6 +80,22 @@ Release assets are written to `release/community/`:
 
 Copy those files into `<vault>/.obsidian/plugins/ssh-terminal/` for manual installation.
 
+## Release
+
+Use the release script to update versions, run verification, build release assets, push the tag, and create the GitHub release:
+
+```powershell
+npm run release -- 0.3.0 --notes "Release 0.3.0"
+```
+
+If a release needs to be rebuilt after an Obsidian review fix, replace the existing tag and assets explicitly:
+
+```powershell
+npm run release -- 0.3.0 --replace --skip-integration --notes "Release 0.3.0"
+```
+
+`--skip-integration` is only for environments where Docker is unavailable.
+
 ## Integration Test
 
 ```powershell

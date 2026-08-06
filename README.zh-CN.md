@@ -80,6 +80,22 @@ npm run package:release
 
 手动安装时，把这三个文件复制到 `<vault>/.obsidian/plugins/ssh-terminal/`。
 
+## 发版
+
+使用发布脚本更新版本、执行验证、构建发布产物、推送 tag，并创建 GitHub release：
+
+```powershell
+npm run release -- 0.3.0 --notes "Release 0.3.0"
+```
+
+如果 Obsidian 审核反馈后需要重建同一个版本，显式替换已有 tag 和 release assets：
+
+```powershell
+npm run release -- 0.3.0 --replace --skip-integration --notes "Release 0.3.0"
+```
+
+`--skip-integration` 只应在 Docker 不可用时使用。
+
 ## 集成测试
 
 ```powershell
