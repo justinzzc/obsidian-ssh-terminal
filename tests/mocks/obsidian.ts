@@ -1,4 +1,32 @@
-export class App {}
+export class WorkspaceLeaf {
+  view: unknown;
+  state: unknown;
+
+  async setViewState(state: unknown): Promise<void> {
+    this.state = state;
+  }
+}
+
+export class ItemView {
+  readonly containerEl = document.createElement("div");
+
+  constructor(readonly leaf: WorkspaceLeaf) {}
+  getViewType(): string { return ""; }
+  getDisplayText(): string { return ""; }
+  async onOpen(): Promise<void> {}
+  async onClose(): Promise<void> {}
+}
+
+export class App {
+  workspace: unknown;
+  vault: unknown;
+
+  constructor(workspace?: unknown, vault?: unknown) {
+    this.workspace = workspace;
+    this.vault = vault;
+  }
+}
+
 export class Plugin {}
 export class Notice {
   constructor(readonly message: unknown) {}
