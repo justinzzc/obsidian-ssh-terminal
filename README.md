@@ -11,7 +11,10 @@ Run interactive SSH terminals directly inside Obsidian Markdown. SSH Terminal re
 - Write connection details directly in Markdown, including plaintext passwords when that tradeoff is useful.
 - Click to connect only when you choose. Rendering a note never starts an SSH session automatically.
 - Use strict host-key confirmation for both inline and profile-based connections.
-- Keep terminals scoped to their rendered block, with resize support and clean disconnect behavior.
+- Keep connected terminals running when you switch documents during the current Obsidian session.
+- Open **SSH Sessions** from the ribbon to see each terminal's status and original source document.
+- Open any session in its own Terminal tab, then activate the same terminal back in its original Markdown block.
+- Close and reopen Terminal tabs without disconnecting SSH; sessions are not restored after Obsidian restarts.
 - Use profile mode when you want encrypted password storage instead of Markdown plaintext.
 
 ## Quick Start: Inline Passwords in Markdown

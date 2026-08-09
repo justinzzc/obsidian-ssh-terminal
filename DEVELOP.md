@@ -53,3 +53,14 @@ npm run test:integration
 ```
 
 The test password is injected only through an environment variable and must not be written to repository files.
+
+## Manual Verification: Runtime Terminal Sessions
+
+1. Connect one terminal from Reading View and another from Live Preview.
+2. Switch to another document and confirm remote commands continue running.
+3. Open **SSH Sessions** from the ribbon and open each session in its independent Terminal tab.
+4. Close a Terminal tab, reopen it from **SSH Sessions**, and confirm the SSH session remains connected.
+5. Return to the original source document, click **Activate**, and confirm scrollback and shell state are preserved.
+6. Rename and delete source documents and confirm the source information and availability state update correctly.
+7. Disconnect a session before removing it, and confirm an active session cannot be removed directly.
+8. Restart Obsidian and confirm previous runtime sessions are not restored.
