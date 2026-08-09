@@ -16,6 +16,34 @@ function captureProcessor() {
 }
 
 describe("registerReadingView", () => {
+  it("resolves an SSH block whose opening fence contains a space", async () => {
+    const captured = captureProcessor();
+    const mountBlock = vi.fn((
+      _container: HTMLElement,
+      _dependencies: TerminalBlockMountDependencies
+    ) => ({ dispose: vi.fn() }));
+    registerReadingView(captured.plugin, {
+      profiles: { get: () => undefined },
+      credentials: {} as never,
+      registry: {} as never,
+      openTerminal: vi.fn(),
+      readSource: async () => "``` ssh\nprofile: production\n```",
+      mountBlock
+    });
+    const container = document.createElement("div");
+
+    captured.processor()("profile: production", container, {
+      sourcePath: "note.md",
+      getSectionInfo: () => ({ lineStart: 0 }),
+      addChild: (child) => child.load()
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mountBlock).toHaveBeenCalledOnce();
+    expect(mountBlock.mock.calls[0]?.[1].occurrence).toBe(0);
+    expect(container.textContent).not.toContain("location changed while rendering");
+  });
+
   it("renders a helpful notice when asynchronous block mounting throws", async () => {
     const captured = captureProcessor();
     registerReadingView(captured.plugin, {
