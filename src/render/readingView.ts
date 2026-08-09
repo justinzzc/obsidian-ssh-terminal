@@ -63,15 +63,21 @@ export function registerReadingView(
     void resolveOccurrence(source, container, context, dependencies).then(
       (occurrence) => {
         if (child.isUnloaded()) return;
-        child.setMount(mountBlock(container, {
-          sourcePath: context.sourcePath,
-          source,
-          occurrence,
-          profiles: dependencies.profiles,
-          credentials: dependencies.credentials,
-          registry: dependencies.registry,
-          openTerminal: dependencies.openTerminal
-        }));
+        try {
+          child.setMount(mountBlock(container, {
+            sourcePath: context.sourcePath,
+            source,
+            occurrence,
+            profiles: dependencies.profiles,
+            credentials: dependencies.credentials,
+            registry: dependencies.registry,
+            openTerminal: dependencies.openTerminal
+          }));
+        } catch (error) {
+          if (!child.isUnloaded()) {
+            renderError(container, error, "Unable to prepare the SSH terminal.");
+          }
+        }
       },
       (error: unknown) => {
         if (!child.isUnloaded()) {

@@ -51,6 +51,8 @@ describe("PersistentTerminalItemView", () => {
       .toBe("SSH terminal unavailable");
     expect(view.containerEl.querySelector(".ssh-error-notice__reason")?.textContent)
       .toBe("SSH terminal instance is no longer available.");
+    expect(view.containerEl.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH configuration");
   });
 
   it("registers a terminal host and activates it on demand", async () => {

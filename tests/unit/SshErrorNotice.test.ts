@@ -35,6 +35,18 @@ describe("renderSshErrorNotice", () => {
       .toBe("Verify the SSH username and password, then try again.");
   });
 
+  it("maps invalid stored profiles to settings guidance", () => {
+    const container = document.createElement("div");
+
+    renderSshErrorNotice(container, {
+      title: "Unable to start SSH terminal",
+      error: new PluginError("PROFILE_INVALID", "SSH profile contains invalid fields.")
+    });
+
+    expect(container.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH Terminal settings");
+  });
+
   it("uses a fixed fallback for unknown values without serializing them", () => {
     const container = document.createElement("div");
 

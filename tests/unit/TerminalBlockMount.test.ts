@@ -2,7 +2,10 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { mountTerminalBlock } from "../../src/render/TerminalBlockMount";
-import type { TerminalInstanceSnapshot } from "../../src/terminal/TerminalInstanceRegistry";
+import {
+  TerminalInstanceRegistry,
+  type TerminalInstanceSnapshot
+} from "../../src/terminal/TerminalInstanceRegistry";
 
 const connectedInTab: TerminalInstanceSnapshot = {
   id: "ssh-terminal-1",
@@ -57,6 +60,33 @@ function dependencies(snapshot?: TerminalInstanceSnapshot) {
 }
 
 describe("mountTerminalBlock", () => {
+  it("renders missing-profile guidance without throwing during preparation", () => {
+    const container = document.createElement("div");
+    const registry = new TerminalInstanceRegistry({
+      sessionManager: {} as never,
+      terminalFactory: vi.fn(() => {
+        throw new Error("terminal factory must not run for a missing profile");
+      })
+    });
+
+    expect(() => mountTerminalBlock(container, {
+      sourcePath: "note.md",
+      source: "profile: missing",
+      occurrence: 0,
+      profiles: { get: () => undefined },
+      credentials: {} as never,
+      registry,
+      openTerminal: vi.fn(async () => undefined)
+    })).not.toThrow();
+
+    expect(container.querySelector(".ssh-error-notice__title")?.textContent)
+      .toBe("Unable to start SSH terminal");
+    expect(container.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toBe("SSH profile not found: missing");
+    expect(container.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH Terminal settings");
+  });
+
   it("attaches a prepared terminal before an instance has started", () => {
     const container = document.createElement("div");
     const deps = dependencies();

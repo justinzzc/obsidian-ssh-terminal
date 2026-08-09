@@ -46,6 +46,7 @@ function guidanceForCode(code: PluginErrorCode): string {
     return "Review the SSH block fields and YAML syntax, then try again.";
   }
   if (
+    code === "PROFILE_INVALID" ||
     code === "PROFILE_NOT_FOUND" ||
     code === "CREDENTIAL_MISSING" ||
     code === "CREDENTIAL_STORE_UNAVAILABLE"

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from "vitest";
+import { PluginError } from "../../src/model";
 import { registerReadingView, type ReadingViewPlugin } from "../../src/render/readingView";
 import type { TerminalBlockMountDependencies } from "../../src/render/TerminalBlockMount";
 
@@ -15,6 +16,31 @@ function captureProcessor() {
 }
 
 describe("registerReadingView", () => {
+  it("renders a helpful notice when asynchronous block mounting throws", async () => {
+    const captured = captureProcessor();
+    registerReadingView(captured.plugin, {
+      profiles: { get: () => undefined },
+      credentials: {} as never,
+      registry: {} as never,
+      openTerminal: vi.fn(),
+      mountBlock: () => {
+        throw new PluginError("PROFILE_NOT_FOUND", "SSH profile not found: missing");
+      }
+    });
+    const container = document.createElement("div");
+
+    captured.processor()("profile: missing", container, {
+      sourcePath: "note.md",
+      addChild: (child) => child.load()
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(container.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toBe("SSH profile not found: missing");
+    expect(container.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH Terminal settings");
+  });
+
   it("uses the shared block mount and only disposes its document host", async () => {
     const captured = captureProcessor();
     const dispose = vi.fn();

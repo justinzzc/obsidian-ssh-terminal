@@ -8,6 +8,7 @@ import type {
   TerminalInstanceRegistry
 } from "../terminal/TerminalInstanceRegistry";
 import { createTerminalOrigin } from "../terminal/TerminalOrigin";
+import { renderSshErrorNotice } from "../ui/SshErrorNotice";
 
 export interface TerminalBlockMountDependencies {
   sourcePath: string;
@@ -44,19 +45,31 @@ export function mountTerminalBlock(
     if (disposed || activated) return;
     const instance = dependencies.registry.findByOrigin(origin);
     if (!instance) {
-      prepared ??= dependencies.registry.prepare({
-        origin,
-        createTarget: () => resolveSshConnectionTarget(
-          parseSshBlock(dependencies.source),
-          dependencies
-        ),
-        height: config.height
-      });
-      hostDisposable ??= prepared.attach({
-        id: hostId,
-        kind: "document",
-        container
-      });
+      try {
+        prepared ??= dependencies.registry.prepare({
+          origin,
+          createTarget: () => resolveSshConnectionTarget(
+            parseSshBlock(dependencies.source),
+            dependencies
+          ),
+          height: config.height
+        });
+        hostDisposable ??= prepared.attach({
+          id: hostId,
+          kind: "document",
+          container
+        });
+      } catch (error) {
+        hostDisposable?.dispose();
+        hostDisposable = undefined;
+        prepared?.disposeIfUnused();
+        prepared = undefined;
+        renderSshErrorNotice(container, {
+          title: "Unable to start SSH terminal",
+          error,
+          fallbackMessage: "Unable to prepare the SSH terminal."
+        });
+      }
       return;
     }
 

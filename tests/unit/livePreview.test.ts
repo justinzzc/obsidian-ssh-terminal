@@ -49,6 +49,8 @@ describe("createLivePreviewExtension", () => {
       .toBe("Unable to start SSH terminal");
     expect(parent.querySelector(".ssh-error-notice__reason")?.textContent)
       .toBe("SSH block requires a profile.");
+    expect(parent.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH block");
     view.destroy();
   });
 
