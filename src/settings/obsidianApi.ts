@@ -1,2 +1,2 @@
-export { ItemView, Modal, Notice, PluginSettingTab, Setting } from "obsidian";
-export type { App, Plugin, ViewStateResult, WorkspaceLeaf } from "obsidian";
+export { ItemView, Modal, Notice, Platform, Plugin, PluginSettingTab, Setting } from "obsidian";
+export type { App, TAbstractFile, TFile, ViewStateResult, WorkspaceLeaf } from "obsidian";

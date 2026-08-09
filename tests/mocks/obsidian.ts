@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 export class WorkspaceLeaf {
   view: unknown;
   state: unknown;
@@ -27,7 +29,30 @@ export class App {
   }
 }
 
-export class Plugin {}
+export class Plugin {
+  readonly registeredViews = new Map<string, (leaf: WorkspaceLeaf) => unknown>();
+  readonly ribbonCallbacks = new Map<string, () => void>();
+  readonly app: App;
+
+  constructor(app = new App()) {
+    this.app = app;
+  }
+
+  loadData = vi.fn(async (): Promise<unknown> => null);
+  saveData = vi.fn(async (_data: unknown): Promise<void> => {});
+  registerMarkdownCodeBlockProcessor = vi.fn();
+  registerEditorExtension = vi.fn();
+  addSettingTab = vi.fn();
+  registerEvent = vi.fn((event: unknown) => event);
+  registerView = vi.fn((type: string, creator: (leaf: WorkspaceLeaf) => unknown) => {
+    this.registeredViews.set(type, creator);
+  });
+  addRibbonIcon = vi.fn((icon: string, _label: string, callback: () => void) => {
+    this.ribbonCallbacks.set(icon, callback);
+  });
+}
+
+export const Platform = { isDesktopApp: true };
 export class Notice {
   constructor(readonly message: unknown) {}
 }
