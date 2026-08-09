@@ -185,6 +185,45 @@ describe("TerminalView", () => {
     expect(terminal.clear).toHaveBeenCalledOnce();
   });
 
+  it("moves the same terminal root between hosts without disposing it", () => {
+    const { container, terminal, manager, view } = mountTerminal();
+    const secondHost = document.createElement("div");
+    const root = container.querySelector(".ssh-terminal");
+
+    view.detach();
+    expect(container.childElementCount).toBe(0);
+    expect(view.isAttached()).toBe(false);
+    expect(manager.close).not.toHaveBeenCalled();
+    expect(terminal.dispose).not.toHaveBeenCalled();
+
+    view.attach(secondHost);
+    expect(secondHost.querySelector(".ssh-terminal")).toBe(root);
+    expect(view.isAttached()).toBe(true);
+    expect(terminal.dispose).not.toHaveBeenCalled();
+  });
+
+  it("treats repeated attachment to the same host as idempotent", () => {
+    const { container, view } = mountTerminal();
+    const root = container.querySelector(".ssh-terminal");
+
+    view.attach(container);
+    view.attach(container);
+
+    expect(container.childElementCount).toBe(1);
+    expect(container.firstElementChild).toBe(root);
+  });
+
+  it("does not reattach after disposal", async () => {
+    const { view } = mountTerminal();
+    const nextHost = document.createElement("div");
+
+    await view.dispose({ preserveSession: true });
+    view.attach(nextHost);
+
+    expect(nextHost.childElementCount).toBe(0);
+    expect(view.isAttached()).toBe(false);
+  });
+
   it("keeps Escape inside the terminal without canceling it", () => {
     const { container, terminal, returnFocus } = mountTerminal();
     const outerKeyDown = vi.fn();

@@ -50,6 +50,7 @@ export class TerminalView {
   private readonly status: HTMLSpanElement;
   private readonly error: HTMLDivElement;
   private readonly connectButton: HTMLButtonElement;
+  private readonly terminalContainer: HTMLDivElement;
   private readonly disposables: Disposable[] = [];
   private readonly sessionDisposables: Disposable[] = [];
   private readonly options: TerminalViewOptions;
@@ -87,17 +88,46 @@ export class TerminalView {
     this.error = document.createElement("div");
     this.error.className = "ssh-terminal__error";
     this.error.hidden = true;
-    const terminalContainer = document.createElement("div");
-    terminalContainer.className = "ssh-terminal__screen";
-    this.root.append(toolbar, this.error, terminalContainer);
+    this.terminalContainer = document.createElement("div");
+    this.terminalContainer.className = "ssh-terminal__screen";
+    this.root.append(toolbar, this.error, this.terminalContainer);
     container.replaceChildren(this.root);
-    this.terminal.open(terminalContainer);
+    this.terminal.open(this.terminalContainer);
 
     // xterm 输入只交给当前渲染实例；未连接时 SessionManager 会安全忽略。
     this.disposables.push(this.terminal.onData((data) => options.manager.write(options.instanceId, data)));
     this.root.addEventListener("keydown", this.onKeyDown);
-    this.installResizeObserver(terminalContainer);
+    this.installResizeObserver(this.terminalContainer);
     if (options.resumeExistingSession) void this.resumeExistingSession();
+  }
+
+  attach(container: HTMLElement): void {
+    if (this.disposed || this.root.parentElement === container) return;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
+    container.replaceChildren(this.root);
+    this.installResizeObserver(this.terminalContainer);
+    this.fit();
+    this.terminal.focus();
+  }
+
+  detach(): void {
+    if (this.disposed || !this.root.parentElement) return;
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
+    this.root.remove();
+  }
+
+  isAttached(): boolean {
+    return !this.disposed && this.root.parentElement !== null;
+  }
+
+  focus(): void {
+    if (!this.disposed) this.terminal.focus();
+  }
+
+  clear(): void {
+    if (!this.disposed) this.terminal.clear();
   }
 
   dispose(options: TerminalViewDisposeOptions = {}): Promise<void> {
