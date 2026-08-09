@@ -16,14 +16,32 @@ describe("findSshBlocksInMarkdown", () => {
     }]);
   });
 
-  it("does not match similar language names", () => {
+  it.each(["ssh2", "shell", "bash"])("does not match the %s language", (language) => {
     const markdown = [
-      "``` ssh2",
+      `\`\`\` ${language}`,
       "profile: production",
       "```"
     ].join("\n");
 
     expect(findSshBlocksInMarkdown(markdown)).toEqual([]);
+  });
+
+  it("accepts tabs and preserves identity across compact and spaced fences", () => {
+    const blocks = findSshBlocksInMarkdown([
+      "```ssh\t",
+      "profile: production",
+      "```",
+      "```\tssh\t",
+      "profile: production",
+      "```"
+    ].join("\n"));
+
+    expect(blocks.map((block) => block.source)).toEqual([
+      "profile: production",
+      "profile: production"
+    ]);
+    expect(blocks.map((block) => block.occurrence)).toEqual([0, 1]);
+    expect(blocks[0]?.identityKey).toBe(blocks[1]?.identityKey);
   });
 
   it("assigns duplicate occurrences in document order", () => {
