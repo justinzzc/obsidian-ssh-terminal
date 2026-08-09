@@ -29,12 +29,6 @@
   font-family: var(--font-monospace);
 }
 
-.ssh-terminal__error {
-  padding: 0.4rem 0.6rem;
-  color: var(--text-error);
-  background: var(--background-modifier-error);
-}
-
 .ssh-error-notice {
   display: grid;
   gap: 0.35rem;

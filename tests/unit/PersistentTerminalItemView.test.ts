@@ -40,6 +40,19 @@ function makeView(location: "background" | "document" | "terminal-tab" = "backgr
 }
 
 describe("PersistentTerminalItemView", () => {
+  it("shows a helpful notice when the runtime instance is unavailable", async () => {
+    const { view, registry } = makeView();
+    registry.get.mockReturnValue(undefined as never);
+    await view.setState({ instanceId: "instance-1" }, { history: false } as never);
+
+    await view.onOpen();
+
+    expect(view.containerEl.querySelector(".ssh-error-notice__title")?.textContent)
+      .toBe("SSH terminal unavailable");
+    expect(view.containerEl.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toBe("SSH terminal instance is no longer available.");
+  });
+
   it("registers a terminal host and activates it on demand", async () => {
     const { view, registry } = makeView();
     await view.setState({ instanceId: "instance-1" }, { history: false } as never);

@@ -4,6 +4,7 @@ import type { Disposable } from "../ssh/SshClientAdapter";
 import type { SshConnectionTarget } from "../ssh/SshConnectionTarget";
 import type { ManagedSession } from "../ssh/SessionManager";
 import { ObsidianTerminalThemeSync } from "./ObsidianTerminalThemeSync";
+import { renderSshErrorNotice } from "./SshErrorNotice";
 
 export interface TerminalAdapter {
   readonly rows: number;
@@ -86,7 +87,7 @@ export class TerminalView {
     );
 
     this.error = document.createElement("div");
-    this.error.className = "ssh-terminal__error";
+    this.error.className = "ssh-terminal__notice";
     this.error.hidden = true;
     this.terminalContainer = document.createElement("div");
     this.terminalContainer.className = "ssh-terminal__screen";
@@ -179,7 +180,7 @@ export class TerminalView {
       this.showError(error);
       return Promise.resolve();
     }
-    this.error.hidden = true;
+    this.clearError();
     this.connectButton.disabled = true;
     this.connectButton.textContent = "Connecting…";
     this.connecting = this.options.manager.connect(this.options.instanceId, target).then(
@@ -246,6 +247,7 @@ export class TerminalView {
   }
 
   private showConnected(): void {
+    this.clearError();
     this.connected = true;
     this.connectButton.textContent = "Disconnect";
     this.connectButton.disabled = false;
@@ -276,12 +278,20 @@ export class TerminalView {
   }
 
   private showError(error: unknown): void {
-    const message = error instanceof Error ? error.message : "SSH connection failed.";
-    this.error.textContent = message;
+    renderSshErrorNotice(this.error, {
+      title: "SSH connection failed",
+      error,
+      fallbackMessage: "Unable to connect to the SSH server."
+    });
     this.error.hidden = false;
     this.connected = false;
     this.connectButton.textContent = "Connect";
     this.connectButton.disabled = false;
+  }
+
+  private clearError(): void {
+    this.error.hidden = true;
+    this.error.replaceChildren();
   }
 }
 

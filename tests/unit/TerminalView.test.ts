@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from "vitest";
+import { PluginError } from "../../src/model";
 
 const xtermMocks = vi.hoisted(() => ({
   options: { theme: {} as Record<string, string> },
@@ -150,6 +151,26 @@ describe("TerminalView", () => {
     await flushPromises();
     expect(manager.connect).toHaveBeenCalledTimes(1);
     expect(manager.connect).toHaveBeenCalledWith("block-1", target);
+  });
+
+  it("shows helpful connection guidance and clears it after reconnecting", async () => {
+    const { container, manager, session, view } = mountTerminal();
+    manager.connect
+      .mockRejectedValueOnce(new PluginError("AUTH_FAILED", "SSH authentication failed."))
+      .mockResolvedValueOnce(session);
+
+    await view.connect();
+
+    expect(container.querySelector(".ssh-error-notice__title")?.textContent)
+      .toBe("SSH connection failed");
+    expect(container.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toBe("SSH authentication failed.");
+    expect(container.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("username and password");
+
+    await view.connect();
+
+    expect(container.querySelector(".ssh-error-notice")).toBeNull();
   });
 
   it("keeps the host visible and uses one button for the connection lifecycle", async () => {

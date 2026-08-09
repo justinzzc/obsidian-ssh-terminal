@@ -5,6 +5,7 @@ import {
 } from "../settings/obsidianApi";
 import type { Disposable } from "../ssh/SshClientAdapter";
 import type { TerminalInstanceRegistry } from "../terminal/TerminalInstanceRegistry";
+import { renderSshErrorNotice } from "./SshErrorNotice";
 import { SSH_TERMINAL_VIEW_TYPE } from "./TerminalWorkspaceController";
 
 interface TerminalItemWorkspaceController {
@@ -121,10 +122,11 @@ export class PersistentTerminalItemView extends ItemView {
 
   private renderUnavailable(): void {
     this.header.replaceChildren();
-    const message = document.createElement("div");
-    message.className = "ssh-terminal__error";
-    message.textContent = "SSH terminal instance is no longer available.";
-    this.terminalHost.replaceChildren(message);
+    renderSshErrorNotice(this.terminalHost, {
+      title: "SSH terminal unavailable",
+      error: new Error("SSH terminal instance is no longer available."),
+      fallbackMessage: "SSH terminal instance is no longer available."
+    });
   }
 }
 
