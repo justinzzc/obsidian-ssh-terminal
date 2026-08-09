@@ -35,6 +35,31 @@
   background: var(--background-modifier-error);
 }
 
+.ssh-error-notice {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--text-error);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  background: var(--background-secondary);
+}
+
+.ssh-error-notice__title {
+  color: var(--text-normal);
+}
+
+.ssh-error-notice__reason {
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+
+.ssh-error-notice__guidance {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
 .ssh-terminal__screen {
   min-height: 0;
   flex: 1;
