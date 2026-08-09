@@ -1,104 +1,115 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@xterm/xterm", () => ({ Terminal: class {} }));
-vi.mock("@xterm/addon-fit", () => ({ FitAddon: class {} }));
-
 import { registerReadingView, type ReadingViewPlugin } from "../../src/render/readingView";
-import type { TerminalViewOptions } from "../../src/ui/TerminalView";
+import type { TerminalBlockMountDependencies } from "../../src/render/TerminalBlockMount";
+
+function captureProcessor() {
+  let processor: Parameters<ReadingViewPlugin["registerMarkdownCodeBlockProcessor"]>[1] | undefined;
+  const plugin: ReadingViewPlugin = {
+    registerMarkdownCodeBlockProcessor: vi.fn((_language, callback) => {
+      processor = callback;
+    })
+  };
+  return { plugin, processor: () => processor! };
+}
 
 describe("registerReadingView", () => {
-  it("registers ssh blocks and disposes the mounted terminal", async () => {
-    let processor: Parameters<ReadingViewPlugin["registerMarkdownCodeBlockProcessor"]>[1] | undefined;
-    const plugin: ReadingViewPlugin = {
-      registerMarkdownCodeBlockProcessor: vi.fn((language, callback) => {
-        expect(language).toBe("ssh");
-        processor = callback;
-      })
-    };
-    const disposable = { dispose: vi.fn(async () => undefined) };
-    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => disposable);
-    registerReadingView(plugin, {
-      profiles: { get: () => ({ id: "prod", name: "Prod", host: "host", port: 22, username: "ops", timeoutMs: 15_000 }) },
-      credentials: {
-        isAvailable: async () => true,
-        getPassword: async () => "stored",
-        setPassword: async () => undefined,
-        deletePassword: async () => undefined
-      },
-      manager: {} as never,
-      mountTerminal
+  it("uses the shared block mount and only disposes its document host", async () => {
+    const captured = captureProcessor();
+    const dispose = vi.fn();
+    const mountBlock = vi.fn((
+      _container: HTMLElement,
+      _dependencies: TerminalBlockMountDependencies
+    ) => ({ dispose }));
+    registerReadingView(captured.plugin, {
+      profiles: { get: () => undefined },
+      credentials: {} as never,
+      registry: {} as never,
+      openTerminal: vi.fn(),
+      readSource: vi.fn(async () => "```ssh\nprofile: prod\n```"),
+      mountBlock
     });
+    let child: { unload(): void } | undefined;
     const container = document.createElement("div");
-    let child: { load(): void; unload(): void; onunload(): void } | undefined;
-    processor!("profile: prod", container, {
+
+    captured.processor()("profile: prod", container, {
       sourcePath: "note.md",
+      getSectionInfo: () => ({ lineStart: 0 }),
       addChild: (value) => {
-        // Obsidian 的 MarkdownRenderContext.addChild 会立即调用子组件的 load()。
-        // 回归测试必须模拟这一行为，防止再次传入只有 onunload 的普通对象。
-        expect(typeof (value as unknown as { load?: unknown }).load).toBe("function");
-        (value as unknown as { load(): void }).load();
+        value.load();
         child = value;
       }
     });
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mountTerminal).toHaveBeenCalledOnce();
-    expect(mountTerminal.mock.calls[0]?.[1].createTarget()).toMatchObject({
-      displayName: "Prod",
-      hostKeyId: "prod"
+    expect(mountBlock).toHaveBeenCalledOnce();
+    expect(mountBlock.mock.calls[0]?.[1]).toMatchObject({
+      sourcePath: "note.md",
+      source: "profile: prod",
+      occurrence: 0
     });
     child!.unload();
     child!.unload();
-    expect(disposable.dispose).toHaveBeenCalledOnce();
+    expect(dispose).toHaveBeenCalledOnce();
   });
 
-  it("renders a safe error and never mounts for invalid blocks", () => {
-    let processor: Parameters<ReadingViewPlugin["registerMarkdownCodeBlockProcessor"]>[1] | undefined;
-    const mountTerminal = vi.fn();
-    registerReadingView({
-      registerMarkdownCodeBlockProcessor: (_language, callback) => { processor = callback; }
-    }, {
+  it("uses the full document to resolve duplicate occurrence", async () => {
+    const captured = captureProcessor();
+    const mountBlock = vi.fn((
+      _container: HTMLElement,
+      _dependencies: TerminalBlockMountDependencies
+    ) => ({ dispose: vi.fn() }));
+    const markdown = [
+      "```ssh",
+      "profile: prod",
+      "```",
+      "text",
+      "```ssh",
+      "profile: prod",
+      "```"
+    ].join("\n");
+    registerReadingView(captured.plugin, {
       profiles: { get: () => undefined },
       credentials: {} as never,
-      manager: {} as never,
-      mountTerminal
+      registry: {} as never,
+      openTerminal: vi.fn(),
+      readSource: async () => markdown,
+      mountBlock
     });
-    const container = document.createElement("div");
-    processor!("profile: prod\npassword: unsafe", container, { sourcePath: "note.md", addChild: vi.fn() });
-    expect(container.textContent).toContain("cannot be combined");
-    expect(container.textContent).not.toContain("unsafe");
-    expect(mountTerminal).not.toHaveBeenCalled();
+
+    captured.processor()("profile: prod", document.createElement("div"), {
+      sourcePath: "note.md",
+      getSectionInfo: () => ({ lineStart: 4 }),
+      addChild: (child) => child.load()
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mountBlock.mock.calls[0]?.[1].occurrence).toBe(1);
   });
 
-  it("mounts inline blocks without using stored profiles", async () => {
-    let processor: Parameters<ReadingViewPlugin["registerMarkdownCodeBlockProcessor"]>[1] | undefined;
-    const mountTerminal = vi.fn((_container: HTMLElement, _options: TerminalViewOptions) => ({ dispose: vi.fn() }));
-    const getPassword = vi.fn(async () => "stored");
-    registerReadingView({
-      registerMarkdownCodeBlockProcessor: (_language, callback) => { processor = callback; }
-    }, {
+  it("renders a safe error and never mounts invalid blocks", () => {
+    const captured = captureProcessor();
+    const mountBlock = vi.fn((
+      _container: HTMLElement,
+      _dependencies: TerminalBlockMountDependencies
+    ) => ({ dispose: vi.fn() }));
+    registerReadingView(captured.plugin, {
       profiles: { get: () => undefined },
-      credentials: {
-        isAvailable: async () => false,
-        getPassword,
-        setPassword: async () => undefined,
-        deletePassword: async () => undefined
-      },
-      manager: {} as never,
-      mountTerminal
+      credentials: {} as never,
+      registry: {} as never,
+      openTerminal: vi.fn(),
+      mountBlock
     });
     const container = document.createElement("div");
-    processor!("host: host\nusername: ops\npassword: never-leak-me", container, {
+
+    captured.processor()("profile: prod\npassword: unsafe", container, {
       sourcePath: "note.md",
       addChild: vi.fn()
     });
 
-    const mountedTarget = mountTerminal.mock.calls[0]?.[1].createTarget();
-    if (!mountedTarget) throw new Error("Expected inline terminal to mount.");
-    expect(mountedTarget).toMatchObject({ host: "host", port: 22, username: "ops" });
-    expect(await mountedTarget.getPassword()).toBe("never-leak-me");
-    expect(getPassword).not.toHaveBeenCalled();
-    expect(container.textContent).not.toContain("never-leak-me");
+    expect(container.textContent).toContain("cannot be combined");
+    expect(container.textContent).not.toContain("unsafe");
+    expect(mountBlock).not.toHaveBeenCalled();
   });
 });

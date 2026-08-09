@@ -1,9 +1,12 @@
 import { parseSshBlock } from "../block/parseSshBlock";
-import { resolveSshConnectionTarget } from "../block/resolveSshConnectionTarget";
 import type { SshProfile } from "../model";
 import type { CredentialStore } from "../profile/CredentialStore";
-import type { SessionManager } from "../ssh/SessionManager";
-import { TerminalView, type TerminalViewOptions } from "../ui/TerminalView";
+import type { TerminalInstanceRegistry } from "../terminal/TerminalInstanceRegistry";
+import {
+  mountTerminalBlock,
+  type TerminalBlockMountDependencies
+} from "./TerminalBlockMount";
+import { findSshBlocksInMarkdown } from "./findSshBlocksInMarkdown";
 
 export interface ReadingRenderChild {
   load(): void;
@@ -14,6 +17,7 @@ export interface ReadingRenderChild {
 export interface ReadingRenderContext {
   sourcePath: string;
   addChild(child: ReadingRenderChild): void;
+  getSectionInfo?(container: HTMLElement): { lineStart: number } | null;
 }
 
 export type ReadingBlockProcessor = (
@@ -29,53 +33,89 @@ export interface ReadingViewPlugin {
 export interface ReadingViewDependencies {
   profiles: { get(profileId: string): SshProfile | undefined };
   credentials: CredentialStore;
-  manager: SessionManager;
-  mountTerminal?: (container: HTMLElement, options: TerminalViewOptions) => { dispose(): void | Promise<void> };
+  registry: TerminalInstanceRegistry;
+  openTerminal(instanceId: string): Promise<void>;
+  readSource?(sourcePath: string): Promise<string>;
+  mountBlock?: (
+    container: HTMLElement,
+    dependencies: TerminalBlockMountDependencies
+  ) => { dispose(): void };
 }
-
-let nextInstanceId = 0;
 
 /** 注册阅读视图中的 ```ssh 代码块处理器。 */
 export function registerReadingView(
   plugin: ReadingViewPlugin,
   dependencies: ReadingViewDependencies
 ): void {
-  const mountTerminal = dependencies.mountTerminal ?? TerminalView.mount;
+  const mountBlock = dependencies.mountBlock ?? mountTerminalBlock;
 
   plugin.registerMarkdownCodeBlockProcessor("ssh", (source, container, context) => {
     try {
-      const block = parseSshBlock(source);
-
-      // sourcePath 与单调计数器共同标识本次渲染，避免同文档多块共享会话。
-      const instanceId = `${context.sourcePath}:reading:${nextInstanceId++}`;
-      const terminal = mountTerminal(container, {
-        instanceId,
-        createTarget: () => resolveSshConnectionTarget(parseSshBlock(source), dependencies),
-        height: block.height,
-        manager: dependencies.manager
-      });
-      // MarkdownRenderContext.addChild 只接受 Obsidian Component；普通对象缺少 load()，
-      // 会在阅读视图初始化时直接抛错并把已经挂载的终端替换成错误块。
-      context.addChild(new TerminalRenderChild(terminal));
+      parseSshBlock(source);
     } catch (error) {
       renderError(container, error instanceof Error ? error.message : "Invalid SSH block.");
+      return;
     }
+
+    const child = new TerminalRenderChild();
+    context.addChild(child);
+    void resolveOccurrence(source, container, context, dependencies).then(
+      (occurrence) => {
+        if (child.isUnloaded()) return;
+        child.setMount(mountBlock(container, {
+          sourcePath: context.sourcePath,
+          source,
+          occurrence,
+          profiles: dependencies.profiles,
+          credentials: dependencies.credentials,
+          registry: dependencies.registry,
+          openTerminal: dependencies.openTerminal
+        }));
+      },
+      (error: unknown) => {
+        if (!child.isUnloaded()) {
+          renderError(container, error instanceof Error ? error.message : "Unable to locate SSH block.");
+        }
+      }
+    );
   });
 }
 
-/** 把终端清理逻辑接入 Obsidian 的 Component 生命周期。 */
+async function resolveOccurrence(
+  source: string,
+  container: HTMLElement,
+  context: ReadingRenderContext,
+  dependencies: ReadingViewDependencies
+): Promise<number> {
+  const section = context.getSectionInfo?.(container);
+  if (!section || !dependencies.readSource) return 0;
+  const markdown = await dependencies.readSource(context.sourcePath);
+  const block = findSshBlocksInMarkdown(markdown)
+    .find((candidate) => candidate.lineStart === section.lineStart);
+  if (!block || block.source !== source) {
+    throw new Error("SSH block location changed while rendering.");
+  }
+  return block.occurrence;
+}
+
 class TerminalRenderChild implements ReadingRenderChild {
   private unloaded = false;
-  private terminal: { dispose(): void | Promise<void> } | undefined;
+  private mount: { dispose(): void } | undefined;
 
-  constructor(terminal: { dispose(): void | Promise<void> }) {
-    this.terminal = terminal;
-  }
-
-  /** Obsidian addChild() 会立即调用 load；本适配器没有额外的加载动作。 */
   load(): void {}
 
-  /** 模拟 Component 的幂等卸载语义，避免同一终端重复释放。 */
+  setMount(mount: { dispose(): void }): void {
+    if (this.unloaded) {
+      mount.dispose();
+      return;
+    }
+    this.mount = mount;
+  }
+
+  isUnloaded(): boolean {
+    return this.unloaded;
+  }
+
   unload(): void {
     if (this.unloaded) return;
     this.unloaded = true;
@@ -83,9 +123,9 @@ class TerminalRenderChild implements ReadingRenderChild {
   }
 
   onunload(): void {
-    const terminal = this.terminal;
-    this.terminal = undefined;
-    void terminal?.dispose();
+    const mount = this.mount;
+    this.mount = undefined;
+    mount?.dispose();
   }
 }
 
