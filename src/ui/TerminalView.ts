@@ -169,7 +169,7 @@ export class TerminalView {
     return this.connected ? this.disconnect() : this.connect();
   }
 
-  private connect(): Promise<void> {
+  connect(): Promise<void> {
     if (this.connecting) return this.connecting;
     if (this.disposed) return Promise.resolve();
     let target: SshConnectionTarget;
