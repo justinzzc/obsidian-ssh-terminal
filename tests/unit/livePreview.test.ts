@@ -3,6 +3,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it, vi } from "vitest";
+import { PluginError } from "../../src/model";
 import { createLivePreviewExtension, findSshBlocks } from "../../src/render/livePreview";
 import type { TerminalBlockMountDependencies } from "../../src/render/TerminalBlockMount";
 
@@ -24,6 +25,33 @@ describe("findSshBlocks", () => {
 });
 
 describe("createLivePreviewExtension", () => {
+  it("renders a helpful notice when an SSH block is invalid", () => {
+    const mountBlock = vi.fn(() => {
+      throw new PluginError("BLOCK_PROFILE_REQUIRED", "SSH block requires a profile.");
+    });
+    const invalidDocument = "```ssh\n\n```\nafter";
+    const state = EditorState.create({
+      doc: invalidDocument,
+      selection: { anchor: invalidDocument.length },
+      extensions: [createLivePreviewExtension({
+        sourcePath: () => "note.md",
+        profiles: { get: () => undefined },
+        credentials: {} as never,
+        registry: {} as never,
+        openTerminal: vi.fn(),
+        mountBlock
+      })]
+    });
+    const parent = document.createElement("div");
+    const view = new EditorView({ state, parent });
+
+    expect(parent.querySelector(".ssh-error-notice__title")?.textContent)
+      .toBe("Unable to start SSH terminal");
+    expect(parent.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toBe("SSH block requires a profile.");
+    view.destroy();
+  });
+
   it("uses the shared block mount and disposes only the widget host", () => {
     const dispose = vi.fn();
     const mountBlock = vi.fn((

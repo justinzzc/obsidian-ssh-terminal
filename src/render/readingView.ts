@@ -2,6 +2,7 @@ import { parseSshBlock } from "../block/parseSshBlock";
 import type { SshProfile } from "../model";
 import type { CredentialStore } from "../profile/CredentialStore";
 import type { TerminalInstanceRegistry } from "../terminal/TerminalInstanceRegistry";
+import { renderSshErrorNotice } from "../ui/SshErrorNotice";
 import {
   mountTerminalBlock,
   type TerminalBlockMountDependencies
@@ -53,7 +54,7 @@ export function registerReadingView(
     try {
       parseSshBlock(source);
     } catch (error) {
-      renderError(container, error instanceof Error ? error.message : "Invalid SSH block.");
+      renderError(container, error, "Invalid SSH block.");
       return;
     }
 
@@ -74,7 +75,7 @@ export function registerReadingView(
       },
       (error: unknown) => {
         if (!child.isUnloaded()) {
-          renderError(container, error instanceof Error ? error.message : "Unable to locate SSH block.");
+          renderError(container, error, "Unable to locate SSH block.");
         }
       }
     );
@@ -129,9 +130,14 @@ class TerminalRenderChild implements ReadingRenderChild {
   }
 }
 
-function renderError(container: HTMLElement, message: string): void {
-  const error = document.createElement("div");
-  error.className = "ssh-terminal__error";
-  error.textContent = message;
-  container.replaceChildren(error);
+function renderError(
+  container: HTMLElement,
+  error: unknown,
+  fallbackMessage: string
+): void {
+  renderSshErrorNotice(container, {
+    title: "Unable to start SSH terminal",
+    error,
+    fallbackMessage
+  });
 }

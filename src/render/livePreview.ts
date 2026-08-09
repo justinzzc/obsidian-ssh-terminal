@@ -8,6 +8,7 @@ import {
 import type { SshProfile } from "../model";
 import type { CredentialStore } from "../profile/CredentialStore";
 import type { TerminalInstanceRegistry } from "../terminal/TerminalInstanceRegistry";
+import { renderSshErrorNotice } from "../ui/SshErrorNotice";
 import {
   mountTerminalBlock,
   type TerminalBlockMountDependencies
@@ -101,8 +102,11 @@ class SshTerminalWidget extends WidgetType {
         returnFocus: () => view.focus()
       });
     } catch (error) {
-      container.classList.add("ssh-terminal__error");
-      container.textContent = error instanceof Error ? error.message : "Invalid SSH block.";
+      renderSshErrorNotice(container, {
+        title: "Unable to start SSH terminal",
+        error,
+        fallbackMessage: "Invalid SSH block."
+      });
     }
     return container;
   }

@@ -108,6 +108,13 @@ describe("registerReadingView", () => {
       addChild: vi.fn()
     });
 
+    expect(container.querySelector(".ssh-error-notice__title")?.textContent)
+      .toBe("Unable to start SSH terminal");
+    expect(container.querySelector(".ssh-error-notice__reason")?.textContent)
+      .toContain("cannot be combined");
+    expect(container.querySelector(".ssh-error-notice__guidance")?.textContent)
+      .toContain("SSH block");
+    expect(container.querySelector(".ssh-terminal__error")).toBeNull();
     expect(container.textContent).toContain("cannot be combined");
     expect(container.textContent).not.toContain("unsafe");
     expect(mountBlock).not.toHaveBeenCalled();
