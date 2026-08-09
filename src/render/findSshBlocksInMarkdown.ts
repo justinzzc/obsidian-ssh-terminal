@@ -1,6 +1,8 @@
 import { parseSshBlock } from "../block/parseSshBlock";
 import { createTerminalBlockKey } from "../terminal/TerminalOrigin";
 
+const SSH_OPENING_FENCE = /^```[\t ]*ssh[\t ]*$/;
+
 export interface MarkdownSshBlock {
   from: number;
   to: number;
@@ -25,7 +27,7 @@ export function findSshBlocksInMarkdown(markdown: string): MarkdownSshBlock[] {
     const lineFrom = offset;
     const lineTo = lineFrom + rawLine.length;
 
-    if (!opening && marker === "```ssh") {
+    if (!opening && SSH_OPENING_FENCE.test(marker)) {
       opening = {
         from: lineFrom,
         lineStart: lineNumber,

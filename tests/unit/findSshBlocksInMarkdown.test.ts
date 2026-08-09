@@ -2,6 +2,30 @@ import { describe, expect, it } from "vitest";
 import { findSshBlocksInMarkdown } from "../../src/render/findSshBlocksInMarkdown";
 
 describe("findSshBlocksInMarkdown", () => {
+  it("recognizes spaces around the ssh info string", () => {
+    const markdown = [
+      "``` ssh   ",
+      "profile: production",
+      "```"
+    ].join("\n");
+
+    expect(findSshBlocksInMarkdown(markdown)).toMatchObject([{
+      lineStart: 0,
+      source: "profile: production",
+      occurrence: 0
+    }]);
+  });
+
+  it("does not match similar language names", () => {
+    const markdown = [
+      "``` ssh2",
+      "profile: production",
+      "```"
+    ].join("\n");
+
+    expect(findSshBlocksInMarkdown(markdown)).toEqual([]);
+  });
+
   it("assigns duplicate occurrences in document order", () => {
     const blocks = findSshBlocksInMarkdown([
       "before",
