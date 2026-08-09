@@ -4,7 +4,7 @@
 
 Run interactive SSH terminals directly inside Obsidian Markdown. SSH Terminal renders `ssh` code blocks in Reading View and Live Preview, so a note can become a runnable operations snippet, lab guide, or server runbook.
 
-![SSH Terminal preview](docs/terminal.png)
+![SSH Terminal preview](https://raw.githubusercontent.com/justinzzc/obsidian-ssh-terminal/0.4.0/docs/terminal.png)
 
 ## Highlights
 
@@ -60,52 +60,6 @@ Profiles keep reusable host settings out of Markdown and store the password thro
 - If operating system encryption is unavailable, the plugin refuses to save profile passwords instead of falling back to plaintext.
 - First connection uses TOFU host-key confirmation. A later host-key mismatch blocks the connection.
 - Logs, notices, status text, and errors do not record passwords, typed commands, or terminal output.
-
-## Build
-
-Requires Node.js 20+.
-
-```powershell
-npm install
-npm run check
-npm run build
-npm run package:release
-```
-
-Release assets are written to `release/community/`:
-
-- `main.js`
-- `manifest.json`
-- `styles.css`
-
-Copy those files into `<vault>/.obsidian/plugins/ssh-terminal/` for manual installation.
-
-## Release
-
-Use the release script to update `package.json`, `package-lock.json`, `manifest.json`, and `versions.json`, run verification, build release assets, push the tag, and create the GitHub release. The version argument can be an explicit `x.y.z` version or one of `major`, `minor`, or `patch`:
-
-```powershell
-npm run release -- 0.3.0 --notes "Release 0.3.0"
-npm run release -- minor --notes "Release next minor version"
-```
-
-If a release needs to be rebuilt after an Obsidian review fix, replace the existing tag and assets explicitly:
-
-```powershell
-npm run release -- 0.3.0 --replace --skip-integration --notes "Release 0.3.0"
-```
-
-`--skip-integration` is only for environments where Docker is unavailable.
-
-## Integration Test
-
-```powershell
-docker build -t obsidian-ssh-test tests/fixtures/sshd
-$env:OBSIDIAN_SSH_TEST_PASSWORD='<temporary-local-password>'
-npm run test:integration
-```
-
-The test password is injected only through an environment variable and should not be written to repository files.
 
 ## First Release Scope
 

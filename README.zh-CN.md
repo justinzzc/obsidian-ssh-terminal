@@ -4,7 +4,7 @@
 
 在 Obsidian Markdown 中直接运行交互式 SSH 终端。SSH Terminal 会把 `ssh` 代码块渲染成可连接的终端，适合运维笔记、实验记录、服务器操作手册和需要复制执行环境的 Markdown 文档。
 
-![SSH Terminal 预览](docs/terminal.png)
+![SSH Terminal 预览](https://raw.githubusercontent.com/justinzzc/obsidian-ssh-terminal/0.4.0/docs/terminal.png)
 
 ## 功能亮点
 
@@ -60,52 +60,6 @@ Profile 模式把可复用的主机信息从 Markdown 中移出，并通过 Elec
 - 如果操作系统加密能力不可用，插件会拒绝保存 profile 密码，不会降级为明文保存。
 - 首次连接采用 TOFU 主机指纹确认；已信任的主机指纹发生变化时，连接会被阻止。
 - 插件日志、通知、状态文本和错误信息不会记录密码、输入命令或终端输出。
-
-## 构建
-
-需要 Node.js 20+。
-
-```powershell
-npm install
-npm run check
-npm run build
-npm run package:release
-```
-
-发布产物位于 `release/community/`：
-
-- `main.js`
-- `manifest.json`
-- `styles.css`
-
-手动安装时，把这三个文件复制到 `<vault>/.obsidian/plugins/ssh-terminal/`。
-
-## 发版
-
-使用发布脚本更新 `package.json`、`package-lock.json`、`manifest.json`、`versions.json`，执行验证、构建发布产物、推送 tag，并创建 GitHub release。版本参数可以是明确的 `x.y.z` 版本号，也可以是 `major`、`minor`、`patch`：
-
-```powershell
-npm run release -- 0.3.0 --notes "Release 0.3.0"
-npm run release -- minor --notes "Release next minor version"
-```
-
-如果 Obsidian 审核反馈后需要重建同一个版本，显式替换已有 tag 和 release assets：
-
-```powershell
-npm run release -- 0.3.0 --replace --skip-integration --notes "Release 0.3.0"
-```
-
-`--skip-integration` 只应在 Docker 不可用时使用。
-
-## 集成测试
-
-```powershell
-docker build -t obsidian-ssh-test tests/fixtures/sshd
-$env:OBSIDIAN_SSH_TEST_PASSWORD='<temporary-local-password>'
-npm run test:integration
-```
-
-测试密码只通过环境变量注入，不应写入仓库文件。
 
 ## 首版范围
 
